@@ -74,7 +74,7 @@ the portal picker is empty.
 | `wit NOT FOUND` | install Wiimms ISO Tool, put `wit` on `PATH`, or `WIT=/path/to/wit` |
 | `no such disc image` | `setup.py` wants the image file itself, not a folder; `.iso`, `.wbfs` and `.wia` all work |
 | the window opens but PLAY does nothing | run `python3 setup.py --check` — it names the missing piece |
-| black screen / no picture in Dolphin | the image boots fine; Dolphin's Metal backend cannot draw this disc, `play-mod.sh` and the launcher force OpenGL on macOS |
+| no picture in Dolphin on macOS | Dolphin's Metal backend cannot build this disc's vertex pipelines; `play-mod.sh` and the launcher force the OpenGL backend instead |
 | the portal picker is empty | the toy library (`../skylanders-nfc-sim/data`) is not next to this folder — optional, only that picker needs it |
 
 ## Layout
@@ -89,7 +89,7 @@ launcher/     the window: session roll, patch, repack, launch, netplay, export
   assets.py       joins the figure catalogue to the extracted art
   sessions.py     UDP announce/discover for the session browser
   platforms.py    per-OS Dolphin/wit paths, fonts, video backend
-tools/        the pkz readers/writers (objects, refs, pools, stats, cups, bots)
+tools/        the pkz readers/writers (see below)
 FINDINGS.md   what the engine does, with the evidence
 reroll.sh     roll a cast and repack
 cups.sh       roll the cup line-ups and repack
@@ -100,6 +100,29 @@ play-mod.sh   start Dolphin on the built image (OpenGL backend forced on macOS)
 
 MIT (see [`LICENSE`](LICENSE)) — for the code in this repo. No game files are
 included or distributed here, and none are downloaded.
+
+## The tools
+
+Run any of them with `--help`; the docstring at the top of each one explains the
+format it reads or writes.
+
+| | |
+|---|---|
+| `pkz_objects.py` | parse a `.pkz`, list its objects and resolve the 32-bit ids they reference — start here |
+| `pkz_refs.py` | the per-object reference tables (the character/vehicle refs live here) |
+| `pkz_random_bots.py` | recast the 71 racer slots as a random cast (what the launcher runs) |
+| `pkz_stats_patch.py` | rewrite the racing stats to balanced profiles |
+| `pkz_cup_random.py` | re-point the three cup playlists at the disc's own circuits |
+| `pkz_pool_swap.py` | move villains into the driver pools without resizing anything |
+| `extract_art.py` | pull portraits, minimaps and menu backgrounds out as PNG |
+| `pkz_textures.py` | list/export every texture in a container |
+
+The rest (`pkz_ai_add`, `pkz_ai_append`, `pkz_pool_grow`, `pkz_pool_all`,
+`pkz_pool_fill`, `pkz_add_test`, `pkz_pool_terrain`, `pkz_text_scan`,
+`pkz_stats_scan`, `pkz_bind`) are the probes used to work out the container, and
+the experiments that did not work out. They are kept because `FINDINGS.md` cites
+them; several of them shift offsets and hang the game, so do not run them on a
+tree you care about.
 
 ## Notes
 
