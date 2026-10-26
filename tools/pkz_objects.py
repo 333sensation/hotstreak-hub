@@ -133,4 +133,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:      # piping into head/grep is the normal way to use this
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())

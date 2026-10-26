@@ -1,5 +1,7 @@
 # Skylanders: SuperChargers Racing (Wii) — roster mod + launcher
 
+![Skylanders: SuperChargers Racing](docs/banner.png)
+
 Tooling and a desktop launcher for modding **Skylanders: SuperChargers Racing**
 (Wii, game id `SKNE52`) *inside the disc's own `.pkz` containers*, plus the notes
 from working out how the engine stores racers.
@@ -20,6 +22,13 @@ exact size and the disc keeps loading.
 | **Launcher** | a tkinter window: PLAY (roll + patch + repack + boot), pin figures, netplay session codes for two-machine split-screen, export to an SD card layout for a real Wii |
 | **Your Skylander** | the figure *you* race as comes from the Portal of Power, not the pkz — the launcher installs the chosen 1024-byte tag image into the emulated portal and enables it in Dolphin |
 
+![Fifty of the figures the disc can field](docs/roster.png)
+
+Fifty of the **224 figures** the disc's toy catalogue knows — the pool a race is
+rolled from. Every image above is the game's own artwork, pulled out of the
+`.pkz` files by `tools/extract_art.py` and composed by
+`tools/make_readme_images.py`; nothing here is drawn or mocked up.
+
 Documented in [`FINDINGS.md`](FINDINGS.md) (the engine findings, including the
 attempts that broke the disc and why) and [`launcher/README.md`](launcher/README.md)
 (launcher usage, platforms, netplay).
@@ -28,9 +37,10 @@ attempts that broke the disc and why) and [`launcher/README.md`](launcher/README
 
 Committed: the Python tools, the launcher, the shell front ends, and the findings.
 **Not** committed (see `.gitignore`): the extracted disc (`disc/`), the pkz
-baselines (`backups/`), the rebuilt `*.wbfs`, extracted text (`text/`), and the
-artwork the launcher draws with — all of that is game data, extracted from a disc
-you own.
+baselines (`backups/`), the rebuilt `*.wbfs`, extracted text (`text/`), the
+fetched `wit` (`tools/wit/`), and the artwork the launcher draws with — all of
+that is extracted from a disc you own. The two composed images in `docs/` are
+the exception, so the README can show what the mod looks like.
 
 ## Setup
 
@@ -52,13 +62,17 @@ window, and repacks `skylanders-scr-mod.wbfs`. Re-running it is safe — it only
 does the steps that are missing, and `--force` rebuilds the image and the
 artwork.
 
-It takes a `.iso`, `.wbfs` or `.wia`. `DOLPHIN=/path/to/Dolphin` and
-`WIT=/path/to/wit` override auto-detection; `wit` is looked for on `PATH`, in
-`tools/wit/`, and in a `DolRecomp` checkout next to this folder.
+It takes a `.iso`, `.wbfs` or `.wia`.
 
-Without `wit` you can still use everything except building the image, and
-without Dolphin you can still patch and export for a real Wii — `setup.py`
-says which of the two is missing.
+`wit` is the one thing setup downloads: if it is not on `PATH`, in `tools/wit/`
+or in a `DolRecomp` checkout next to this folder, the official build
+(wit.wiimm.de, v3.05a) is fetched into `tools/wit/` and ad-hoc signed on macOS —
+that folder is git-ignored. `python3 setup.py --fetch-wit` does just that step,
+and `--no-fetch` refuses to download anything. Same for Dolphin: `DOLPHIN=` and
+`WIT=` override auto-detection.
+
+Without Dolphin you can still patch and export for a real Wii; without `wit`
+nothing can be unpacked or repacked, and `setup.py` says so before it starts.
 
 `reroll.sh` and `cups.sh` do the same rolls and repack from a shell, without the
 window. The launcher expects the Skylander tag dumps (1024-byte `.sky` images)
@@ -77,6 +91,89 @@ the portal picker is empty.
 | no picture in Dolphin on macOS | Dolphin's Metal backend cannot build this disc's vertex pipelines; `play-mod.sh` and the launcher force the OpenGL backend instead |
 | the portal picker is empty | the toy library (`../skylanders-nfc-sim/data`) is not next to this folder — optional, only that picker needs it |
 
+## Doing it by hand (the way this repo was built)
+
+`setup.py` only automates this. These are the steps, in this order, with the
+tool I actually used: **Wiimms ISO Tool v3.05a r8638**, the copy that came with
+the DolRecomp checkout at `../DolRecomp/extern/wit/bin/wit` — nothing had to be
+installed for it.
+
+```sh
+WIT=../DolRecomp/extern/wit/bin/wit      # or WIT=/path/to/wit, or put wit on PATH
+
+# 1. unpack the disc
+$WIT extract "/path/to/Skylanders SuperChargers Racing.iso" disc
+ls disc/files/Data/BaseGameplay.pkz
+
+# 2. keep a known-good pair before touching anything
+mkdir -p backups
+cp disc/files/Data/BaseGameplay.pkz  backups/BaseGameplay.pkz.pristine
+cp disc/files/Data/BaseGameplay.pkz  backups/BaseGameplay.pkz.working-randomcast
+cp disc/files/Data/BaseSkylander.pkz backups/BaseSkylander.pkz.pristine
+cp disc/files/Data/Common.pkz        backups/Common.pkz.pristine
+
+# 3. look before you patch
+python3 tools/pkz_objects.py disc/files/Data | head -20
+python3 tools/pkz_objects.py disc/files/Data --name _AIInfo | wc -l      # 60 racer records
+python3 tools/pkz_objects.py disc/files/Data --name DriverPeacock --refs
+```
+
+The objects are printed as `file  name  id  size  fields`; `--refs` resolves the
+32-bit ids in each record to the object they point at, which is how a racer's
+character and vehicle refs were found — in `DriverPeacock_Land_AIInfo` the three
+refs read *character, AI template, vehicle* plus the terrain byte at the end.
+
+Then the mod, one change at a time, repacking and verifying after each:
+
+```sh
+python3 tools/pkz_random_bots.py        # recast the 71 racer slots in place
+python3 tools/pkz_stats_patch.py        # balanced racing stats in BaseSkylander.pkz
+python3 tools/pkz_cup_random.py --print # show a cup line-up, then drop --print to write it
+python3 tools/extract_art.py            # the game's own portraits for the window
+
+$WIT copy disc skylanders-scr-mod.wbfs --overwrite
+$WIT verify skylanders-scr-mod.wbfs | tail -1     # must read +OK ... SKNE52
+```
+
+Do not trust the repack alone — check that the file inside the image is the one
+you patched:
+
+```sh
+md5 -q disc/files/Data/BaseGameplay.pkz
+$WIT extract skylanders-scr-mod.wbfs /tmp/check
+md5 -q /tmp/check/files/Data/BaseGameplay.pkz     # same hash
+```
+
+Boot it:
+
+```sh
+./play-mod.sh           # = Dolphin -v ogl -e skylanders-scr-mod.wbfs
+```
+
+Four things cost me time; they are worth knowing before you hit them:
+
+* **`-v ogl` is not optional on macOS.** Dolphin's Metal backend cannot build
+  this disc's vertex pipelines and dumps `bad_pipeline_Metal_*.txt` to
+  `~/Library/Application Support/Dolphin/Dump/`. It looks exactly like a broken
+  image.
+* **A downloaded `wit` needs a signature.** The build from wit.wiimm.de is
+  linker-signed; on arm64 macOS the kernel kills it (signal 9) until you run
+  `codesign --force --sign - tools/wit/bin/wit`.
+* **Every edit has to keep the file size.** The `.pkz` key registry is a hash
+  index, so adding an object shifts offsets and the game hangs on load. Compare
+  `ls -l` before and after, and `wit verify` after the repack.
+* **A racer has two refs** (character and vehicle). Re-point the character and
+  leave the vehicle alone; giving a villain its own hull is what produced
+  corrupt racers (`FINDINGS.md`, "A racer's two refs").
+
+Undo any of it by copying the pristine pair back and repacking:
+
+```sh
+cp backups/BaseGameplay.pkz.pristine disc/files/Data/BaseGameplay.pkz
+cp backups/Common.pkz.pristine       disc/files/Data/Common.pkz
+$WIT copy disc skylanders-scr-mod.wbfs --overwrite
+```
+
 ## Layout
 
 ```
@@ -90,6 +187,7 @@ launcher/     the window: session roll, patch, repack, launch, netplay, export
   sessions.py     UDP announce/discover for the session browser
   platforms.py    per-OS Dolphin/wit paths, fonts, video backend
 tools/        the pkz readers/writers (see below)
+docs/         banner.png + roster.png, composed from the disc's own art
 FINDINGS.md   what the engine does, with the evidence
 reroll.sh     roll a cast and repack
 cups.sh       roll the cup line-ups and repack
@@ -101,10 +199,15 @@ play-mod.sh   start Dolphin on the built image (OpenGL backend forced on macOS)
 MIT (see [`LICENSE`](LICENSE)) — for the code in this repo. No game files are
 included or distributed here, and none are downloaded.
 
+The two images in `docs/` are the game's own artwork, included only to show what
+the mod does; the art itself remains © Activision and is not covered by that
+license.
+
 ## The tools
 
-Run any of them with `--help`; the docstring at the top of each one explains the
-format it reads or writes.
+The docstring at the top of each one explains the format it reads or writes; the
+`argparse` ones take `--help`, the older scripts print their usage when run with
+no arguments (`python3 tools/pkz_objects.py`).
 
 | | |
 |---|---|
@@ -115,6 +218,7 @@ format it reads or writes.
 | `pkz_cup_random.py` | re-point the three cup playlists at the disc's own circuits |
 | `pkz_pool_swap.py` | move villains into the driver pools without resizing anything |
 | `extract_art.py` | pull portraits, minimaps and menu backgrounds out as PNG |
+| `make_readme_images.py` | compose `docs/banner.png` and `docs/roster.png` out of that art |
 | `pkz_textures.py` | list/export every texture in a container |
 
 The rest (`pkz_ai_add`, `pkz_ai_append`, `pkz_pool_grow`, `pkz_pool_all`,
