@@ -242,6 +242,10 @@ the experiments that did not work out. They are kept because `FINDINGS.md` cites
 them; several of them shift offsets and hang the game, so do not run them on a
 tree you care about.
 
+[`TIERLIST.md`](TIERLIST.md) ranks all 182 figures best to worst from the stats
+`pkz_stats_patch.py` writes — with the weights spelled out, since every figure
+totals the same 3.0 and the order depends on what you value.
+
 ## Notes
 
 - Every edit is **same-size**: the disc's key registry is a hash index, so adding
