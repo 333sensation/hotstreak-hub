@@ -22,6 +22,18 @@ exact size and the disc keeps loading.
 | **Launcher** | a tkinter window: PLAY (roll + patch + repack + boot), pin figures, netplay session codes for two-machine split-screen, export to an SD card layout for a real Wii |
 | **Your Skylander** | the figure *you* race as comes from the Portal of Power, not the pkz — the launcher installs the chosen 1024-byte tag image into the emulated portal and enables it in Dolphin |
 
+## Promo clip
+
+[![The promo clip: 32 seconds of the mod](docs/promo.gif)](promo/promo.mp4)
+
+32 seconds, silent preview above — the real thing with sound is
+[`promo/promo.mp4`](promo/promo.mp4) (4 MB). The art is the disc's own; the
+soundtrack is a music cue cut out of `Streams2.dat` with
+[SSCR-Audio-Tool](https://github.com/Gopooo/SSRC-Audio-Tool).
+`tools/make_promo.py` renders it, and
+[`promo/README.md`](promo/README.md) documents which stream was used, why, and
+how to re-render or swap the music.
+
 ![Fifty of the figures the disc can field](docs/roster.png)
 
 Fifty of the **224 figures** the disc's toy catalogue knows — the pool a race is
@@ -35,12 +47,12 @@ attempts that broke the disc and why) and [`launcher/README.md`](launcher/README
 
 ## What is in the repo — and what is not
 
-Committed: the Python tools, the launcher, the shell front ends, and the findings.
-**Not** committed (see `.gitignore`): the extracted disc (`disc/`), the pkz
-baselines (`backups/`), the rebuilt `*.wbfs`, extracted text (`text/`), the
-fetched `wit` (`tools/wit/`), and the artwork the launcher draws with — all of
-that is extracted from a disc you own. The two composed images in `docs/` are
-the exception, so the README can show what the mod looks like.
+Committed: the Python tools, the launcher, the shell front ends, the findings,
+and the promo clip. **Not** committed (see `.gitignore`): the extracted disc
+(`disc/`), the pkz baselines (`backups/`), the rebuilt `*.wbfs`, extracted text
+(`text/`), the fetched `wit` (`tools/wit/`), and the artwork the launcher draws
+with — all of that is extracted from a disc you own. The composed files in `docs/`
+and `promo/` are the exception, so the README can show what the mod looks like.
 
 ## Setup
 
@@ -187,7 +199,8 @@ launcher/     the window: session roll, patch, repack, launch, netplay, export
   sessions.py     UDP announce/discover for the session browser
   platforms.py    per-OS Dolphin/wit paths, fonts, video backend
 tools/        the pkz readers/writers (see below)
-docs/         banner.png + roster.png, composed from the disc's own art
+docs/         banner.png + roster.png + promo.gif, composed from the disc's own art
+promo/        promo.mp4 and how it was made
 FINDINGS.md   what the engine does, with the evidence
 reroll.sh     roll a cast and repack
 cups.sh       roll the cup line-ups and repack
@@ -219,6 +232,7 @@ no arguments (`python3 tools/pkz_objects.py`).
 | `pkz_pool_swap.py` | move villains into the driver pools without resizing anything |
 | `extract_art.py` | pull portraits, minimaps and menu backgrounds out as PNG |
 | `make_readme_images.py` | compose `docs/banner.png` and `docs/roster.png` out of that art |
+| `make_promo.py` | render `promo/promo.mp4`: game art, game music, one ffmpeg pipe |
 | `pkz_textures.py` | list/export every texture in a container |
 
 The rest (`pkz_ai_add`, `pkz_ai_append`, `pkz_pool_grow`, `pkz_pool_all`,
