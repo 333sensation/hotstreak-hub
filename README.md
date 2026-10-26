@@ -34,38 +34,54 @@ you own.
 
 ## Setup
 
-Requirements: Python 3.9+ with tkinter, `pip install pillow`, Dolphin, and
-[Wiimms ISO Tool](https://wit.wiimm.de/) (`wit`) to unpack/repack the image.
+You need: Python 3.9+ with tkinter, `pip install -r requirements.txt` (Pillow),
+Dolphin to play, and [Wiimms ISO Tool](https://wit.wiimm.de/) (`wit`) to
+unpack/repack the image. Nothing else is downloaded for you, and **you need your
+own copy of the disc**.
 
 ```sh
-# 1. unpack your own disc into ./disc (the tree wit EXTRACT produces)
-wit extract "/path/to/Skylanders SuperChargers Racing.iso" disc
-
-# 2. the launcher patches a known-good baseline instead of the pristine file
-mkdir -p backups
-cp disc/files/Data/BaseGameplay.pkz  backups/BaseGameplay.pkz.pristine
-cp disc/files/Data/BaseGameplay.pkz  backups/BaseGameplay.pkz.working-randomcast
-cp disc/files/Data/BaseSkylander.pkz backups/BaseSkylander.pkz.pristine
-cp disc/files/Data/Common.pkz        backups/Common.pkz.pristine
-
-# 3. optional: the launcher's portraits/minimaps are the game's own art
-python3 tools/extract_art.py
-
-# 4. build the image once, so PLAY has something to boot
-wit copy disc skylanders-scr-mod.wbfs
-
-# 5. run it
-./launcher/run.sh          # --check prints where it found Python, Pillow, Dolphin, wit
+python3 setup.py --check                 # what is still missing on this machine
+python3 setup.py /path/to/your/game.iso  # unpack, make the baselines, build the image
+./run.sh                                 # Windows: run.cmd
 ```
 
-`DOLPHIN=` and `WIT=` override auto-detection. `reroll.sh` and `cups.sh` do the
-same rolls and repack from a shell, without the window. The launcher expects the
-Skylander tag dumps (1024-byte `.sky` images) in `../skylanders-nfc-sim/data`;
-without them the roster side still works, only the portal picker is empty.
+`setup.py` is the whole install: it finds `wit` and Dolphin, unpacks the image
+into `disc/`, copies the four pristine `.pkz` baselines the patcher works from
+into `backups/`, pulls the game's own portraits/minimaps out of the disc for the
+window, and repacks `skylanders-scr-mod.wbfs`. Re-running it is safe — it only
+does the steps that are missing, and `--force` rebuilds the image and the
+artwork.
+
+It takes a `.iso`, `.wbfs` or `.wia`. `DOLPHIN=/path/to/Dolphin` and
+`WIT=/path/to/wit` override auto-detection; `wit` is looked for on `PATH`, in
+`tools/wit/`, and in a `DolRecomp` checkout next to this folder.
+
+Without `wit` you can still use everything except building the image, and
+without Dolphin you can still patch and export for a real Wii — `setup.py`
+says which of the two is missing.
+
+`reroll.sh` and `cups.sh` do the same rolls and repack from a shell, without the
+window. The launcher expects the Skylander tag dumps (1024-byte `.sky` images)
+in `../skylanders-nfc-sim/data`; without them the roster side still works, only
+the portal picker is empty.
+
+## If it does not start
+
+| what you see | what to do |
+|---|---|
+| `tkinter is missing` | Debian/Ubuntu `sudo apt install python3-tk`, Fedora `sudo dnf install python3-tkinter`, Windows: reinstall Python from python.org with **tcl/tk** ticked |
+| `Pillow is missing` | `python3 -m pip install -r requirements.txt` |
+| `wit NOT FOUND` | install Wiimms ISO Tool, put `wit` on `PATH`, or `WIT=/path/to/wit` |
+| `no such disc image` | `setup.py` wants the image file itself, not a folder; `.iso`, `.wbfs` and `.wia` all work |
+| the window opens but PLAY does nothing | run `python3 setup.py --check` — it names the missing piece |
+| black screen / no picture in Dolphin | the image boots fine; Dolphin's Metal backend cannot draw this disc, `play-mod.sh` and the launcher force OpenGL on macOS |
+| the portal picker is empty | the toy library (`../skylanders-nfc-sim/data`) is not next to this folder — optional, only that picker needs it |
 
 ## Layout
 
 ```
+setup.py      one-command install: unpack, baselines, artwork, image
+run.sh        start the launcher (run.cmd on Windows)
 launcher/     the window: session roll, patch, repack, launch, netplay, export
   roster.py       the 71 racer slots out of BaseGameplay.pkz
   pipeline.py     session codes + build/launch/export
@@ -79,6 +95,11 @@ reroll.sh     roll a cast and repack
 cups.sh       roll the cup line-ups and repack
 play-mod.sh   start Dolphin on the built image (OpenGL backend forced on macOS)
 ```
+
+## License
+
+MIT (see [`LICENSE`](LICENSE)) — for the code in this repo. No game files are
+included or distributed here, and none are downloaded.
 
 ## Notes
 

@@ -7,6 +7,9 @@ starts it. All artwork in the window is the game's own, pulled out of the disc b
 
 ## Run it
 
+From the repo root: `./run.sh` (Windows: `run.cmd`). It starts this folder's
+`run.sh`, which checks Python, tkinter and Pillow before opening the window.
+
 | OS | start |
 |---|---|
 | macOS | `./"Skylanders Launcher.command"` or `./run.sh` |
