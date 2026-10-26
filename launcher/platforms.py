@@ -82,11 +82,14 @@ def wit():
     The tree is repacked with it after every roster change, so Windows and
     Linux users need the binary for their OS (wiimms-iso-tools releases).
     """
+    exe = "wit.exe" if IS_WIN else "wit"
     env = os.environ.get("WIT")
     cands = [env,
-             os.path.join(ROOT, "tools", "wit", "wit.exe" if IS_WIN else "wit"),
-             os.path.join(ROOT, "..", "DolRecomp", "extern", "wit", "bin",
-                          "wit.exe" if IS_WIN else "wit")]
+             os.path.join(ROOT, "tools", "wit", "wit"),
+             os.path.join(ROOT, "tools", "wit", exe),
+             # `python3 setup.py --fetch-wit` unpacks the official build here
+             os.path.join(ROOT, "tools", "wit", "bin", exe),
+             os.path.join(ROOT, "..", "DolRecomp", "extern", "wit", "bin", exe)]
     found = _existing([c for c in cands if c])
     if found:
         return found

@@ -13,6 +13,9 @@ text/
 .*.wbfs.*.tmp
 .*.iso.*.tmp
 
+# Fetched Wiimms ISO Tool (setup.py --fetch-wit)
+tools/wit/
+
 # Launcher runtime state and extracted (copyrighted) artwork
 launcher/assets/
 launcher/cache/
