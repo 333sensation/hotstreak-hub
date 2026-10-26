@@ -43,12 +43,34 @@ in five big-endian IEEE-754 floats in 0.0–1.0 (the UI draws 0–5 pips):
 
 `scr-wii/tools/pkz_stats_scan.py` extracts them.
 
-**Coverage:** the whole disc contains only **34** stat objects (25 in
-`BaseSkylander.pkz`: 14 "Eon's Elite" variants + 11 villains, plus their
-vehicles). The ~150 regular Skylanders have **no** `_Stats` object at all, which
-is exactly the "no stats" problem. Adding stats for them means adding new
-objects to the container (the format is understood, but it needs a writer with
-offset/size fixups; in-place float edits of existing blocks are trivial).
+**Coverage (corrected).** The "only 34 stat objects" figure above was a naming
+artefact, and so was the later "~150 Skylanders have no `_Stats` object". Counting
+by object **type** instead of by name, `BaseSkylander.pkz` holds **304** stat
+records (`0x4BBD2CFD`, every one a 36-byte body):
+
+| | |
+|---|---|
+| character records | **203** — SA `00xx`, Giants `01xx`, Trap Team `04xx`/`30xx`, minis `05xx`, SWAP Force legs `10xx` / body `20xx`, SuperChargers `34xx`, the `_Dark`/`_LG`/`EonsElite` variants, 14 villains |
+| vehicle records | **101** — `*_Stats_Mod_0/1/2/SC` for the 20 player vehicles, plus `*Plane/Car/Boat_Stats` and `RentAWreck_*` for the villain hulls |
+| all-zero records | **161** (148 character + the 13 villain hulls) |
+
+So every character the disc can name *does* have a record; what it does not have
+— for 148 of them — is **numbers**. Nothing else on the disc supplies them
+(`BaseGameplay.pkz` and `Common.pkz` contain none), so they have to be invented,
+which `tools/pkz_stats_patch.py` now does in place (no new objects, no offset
+fixups).
+
+Two reasons a name-based scan undercounts, both worth knowing before writing
+tooling against this file:
+
+* 92 of the 304 records do not end in `Stats` — the 85 vehicle mod stages and 7
+  character variants (`3412_NitroStats_Dark`, `3413_DriverJetVacStats_LG`, ...);
+* on 27 records the `0x138E` key chunk holds the 4-byte key **in front of** the
+  name, so a printable-run regex reads the key as the name (`Qy\\"`, `x{`, ...).
+  The real name sits behind the `ff ff ff ff` end marker in the same chunk.
+
+`tools/pkz_stats_patch.py` walks the wrappers by type and reads the name from
+behind that marker, which is how it sees all 304.
 
 ## Bot / AI racers
 
@@ -113,29 +135,52 @@ sequential chunk headers (`0x8000xxxx` + length), 32-bit CRC32 ids and a
 zero-padded name per object, with a compressed/opaque blob region at the end of
 each file.
 
-## Applied mod: balanced stats (done)
+## Applied mod: stats for every figure (done)
 
-Every character owns a `<figure>_<Name>Stats` / `<Name>_Stats` object holding the
-five floats. `BaseSkylander.pkz` has **210** of them; before the patch **161 were
-all zeros** — only Eon's Elite variants, villains and the 20 SuperCharger drivers
-had real values. (The earlier "44" count only matched the `_Stats` spelling.)
+`tools/pkz_stats_patch.py` now covers **all 304** records it finds by type, and
+every character ends up with real values: the 148 empty character records are
+filled and the 55 that already shipped numbers are regenerated onto the same
+scheme. Scheme:
 
-`tools/pkz_stats_patch.py` rewrites the 194 character/driver/villain blocks so
-that every one totals **3.0** with one of five distinct profiles picked from the
-figure id (speedster, bruiser, technical, gunner, all-rounder). The 16 vehicle
-blocks (`*Plane_Stats`, `*Car_Stats`, `*Boat_Stats`, `RentAWreck_*`) are left
-alone. Only the 20 float bytes per block change, so no offsets, sizes or ids in
-the container move.
+* one of five archetypes (speedster, bruiser, technical, gunner, all-rounder)
+  picked from a CRC32 of the figure's own name, then each stat jittered
+  multiplicatively, so two figures on the same archetype still differ;
+* snapped to the **0.05 grid** the disc itself uses and normalised to a total of
+  **3.0** per figure — the same budget as the old "balanced" scheme, so the
+  roster stays fair;
+* a `_Dark` / `_LG` / `EonsElite` variant keeps its base figure's spread with
+  0.10 moved from its weakest stat to its strongest one that still has room
+  (Whirlwind's armor is already 1.00), so a variant never comes out identical to
+  its base: same budget, sharper feel — what the disc's own variant numbers do
+  (base 2.5, variant 3.0);
+* SWAP Force halves keep their own record (a Legs record and a Body record for
+  the same toy differ), so a swapped figure is not a clone of its parts.
 
-Verification performed:
+Vehicle records are **not** characters, so by default only the 13 empty villain
+hulls are filled; the 88 tuned vehicle records (the 20 player vehicles incl. their
+`Mod_1`/`Mod_2`/`Mod_SC` stages, and the `RentAWreck_*` hulls) keep the disc's
+numbers — rewriting those changes how your own ride handles. `--vehicles`
+regenerates all 101 anyway.
 
-* byte diff of `BaseSkylander.pkz.orig` vs patched: 3,071 bytes changed, all of
-them inside the 210 stat float blocks, file size identical;
-* re-scan shows every character sums to 3.0 (0 mismatches);
-* `wit COPY disc mod.wbfs` → `wit verify` reports `+OK ... DATA SKNE52`;
-* re-extracting `mod.wbfs` gives a byte-identical `BaseSkylander.pkz` and every
-  other file matches the working tree (`diff -rq`, only `sys/fst.bin` and
-  `sys/boot.bin` regenerated by wit, as expected).
+Verification performed on the patched file:
+
+* 216 records written (203 characters + 13 villain hulls), 3,485 bytes changed of
+  318,772 — every changed byte inside a 20-byte float field, file size identical;
+* `all-zero records left: 0`; every character record sums to exactly 3.00 and
+  every value is inside 0.0–1.0;
+* 197 distinct spreads across the 203 character records (largest group: 2);
+* the chunk tree still tiles and the object-type histogram is unchanged
+  (`pkz_pool_grow.tree_ok`), i.e. nothing moved but the floats;
+* `wit copy disc skylanders-scr-mod.wbfs` → `wit verify` reports
+  `+OK ... DATA SKNE52` (11 s), and extracting `files/Data/BaseSkylander.pkz`
+  from the image gives md5 `e8a14b7febb68269b430f829e2fb71a5`, the same as
+  the patched file in `disc/`.
+
+Two things nobody has verified: **reading the pips in game** (the check above is
+container-level, not a screen capture), and how the engine treats a **SWAP Force**
+figure, whose Legs and Body records each got 3.0 — if it sums the halves instead
+of picking one, those swaps read double. Every other record belongs to exactly
+one racer.
 
 Revert with `cp disc/files/Data/BaseSkylander.pkz.orig disc/files/Data/BaseSkylander.pkz`.
 
@@ -681,7 +726,8 @@ trophy, plus the `Driver*` duplicates of the SuperCharger figures.
 That leaves **224 catalogue figures over 122 distinct toy numbers** (the
 difference is the variant line: Series 2/3/4, LightCore, Eon's Elite, Dark,
 Legendary, Legendary LightCore, seasonal), 221 of which have a portrait on the
-disc. 111 of the 224 ship their own `*Stats` object; the other 113 inherit their
+disc. 126 of the 224 ship their own stat record (counted by object type; the
+name-suffix scan the launcher used sees only 111); the other 98 inherit their
 base figure's numbers at runtime.
 
 Two things worth knowing:
@@ -747,13 +793,14 @@ else (`BaseGameplay.pkz` and `Common.pkz` have none). Two same-toy cases differ
 too: `0005_TerrafinStats` has values while `0005_Terrafin_EonsElite_Stats` is all
 zeros.
 
-`tools/pkz_stats_patch.py` was written to "balance" this and it collapses every
-character onto **5 profiles**, which is why a patched tree plays identically
-figure to figure. That patched copy had been left in `disc/files/Data` (md5
-`01850ac76459`, identical to `backups/BaseSkylander.pkz.stats`). It has been
-reverted to the pristine file, and the tool now carries a warning. Any future
-"make the figures feel different" work has to invent values for the 137 empty
-toy numbers - nothing on the disc provides them.
+The first version of `tools/pkz_stats_patch.py` collapsed every character onto
+**5 profiles**, which is why a tree patched with it played identically figure to
+figure, and it also only reached the 196 records whose name ends in `Stats`. Both
+are fixed: the tool enumerates by object type (all 203 character records) and
+gives each figure its own spread, so the flattening is gone. What cannot be fixed
+is the source data - the 148 empty records have to be invented, nothing on the
+disc provides them. See "Applied mod: stats for every figure" above for the
+scheme and the verification.
 
 ## A racer's two refs: which one broke the disc
 

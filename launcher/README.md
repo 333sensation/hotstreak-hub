@@ -44,8 +44,8 @@ auto-detect guesses wrong:
 
 Every figure the disc's toy catalogue knows: **224 entries over 122 distinct toy
 numbers** (the gap is the variant line — Series 2/3/4, LightCore, Eon's Elite,
-Dark, Legendary, seasonal), 221 of them with a portrait on the disc. 111 ship
-their own stats object; the other 113 inherit their base figure's numbers at
+Dark, Legendary, seasonal), 221 of them with a portrait on the disc. 126 ship
+their own stat record; the other 98 inherit their base figure's numbers at
 runtime, so the launcher rolls over all 224 — one figure per **character**, so
 the same toy never lines up twice (a Series 2 and a LightCore of one figure look
 alike on the grid). Vehicles, magic items, adventure

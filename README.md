@@ -17,7 +17,7 @@ exact size and the disc keeps loading.
 | | |
 |---|---|
 | **Random cast** | every boot fields a different set of opponents: `launcher/` rolls a cast over the disc's 224 catalogue figures and patches the 71 slots, then repacks the image (~10 s) |
-| **Balanced stats** | `tools/pkz_stats_patch.py` rewrites the 194 character stat records to five balanced profiles (flattens the roster — that is the point) |
+| **Stats for every figure** | `tools/pkz_stats_patch.py` fills in all 203 character stat records — 148 of them ship as empty stubs — with one generated spread per figure, so no two drive alike |
 | **Random cups** | `tools/pkz_cup_random.py` re-points the three cup playlists at a fresh order of the disc's own circuits |
 | **Launcher** | a tkinter window: PLAY (roll + patch + repack + boot), pin figures, netplay session codes for two-machine split-screen, export to an SD card layout for a real Wii |
 | **Your Skylander** | the figure *you* race as comes from the Portal of Power, not the pkz — the launcher installs the chosen 1024-byte tag image into the emulated portal and enables it in Dolphin |
@@ -139,7 +139,7 @@ Then the mod, one change at a time, repacking and verifying after each:
 
 ```sh
 python3 tools/pkz_random_bots.py        # recast the 71 racer slots in place
-python3 tools/pkz_stats_patch.py        # balanced racing stats in BaseSkylander.pkz
+python3 tools/pkz_stats_patch.py        # real racing stats for every character (BaseSkylander.pkz)
 python3 tools/pkz_cup_random.py --print # show a cup line-up, then drop --print to write it
 python3 tools/extract_art.py            # the game's own portraits for the window
 
@@ -227,7 +227,7 @@ no arguments (`python3 tools/pkz_objects.py`).
 | `pkz_objects.py` | parse a `.pkz`, list its objects and resolve the 32-bit ids they reference — start here |
 | `pkz_refs.py` | the per-object reference tables (the character/vehicle refs live here) |
 | `pkz_random_bots.py` | recast the 71 racer slots as a random cast (what the launcher runs) |
-| `pkz_stats_patch.py` | rewrite the racing stats to balanced profiles |
+| `pkz_stats_patch.py` | give every character its own racing stats; fills the 148 empty stat records |
 | `pkz_cup_random.py` | re-point the three cup playlists at the disc's own circuits |
 | `pkz_pool_swap.py` | move villains into the driver pools without resizing anything |
 | `extract_art.py` | pull portraits, minimaps and menu backgrounds out as PNG |
