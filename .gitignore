@@ -1,0 +1,24 @@
+# Game data — extracted from your own disc, never committed
+disc/
+backups/
+out/
+text/
+*.pkz
+*.pkzx
+*.wbfs
+*.iso
+*.wia
+*.usm
+*.dat
+.*.wbfs.*.tmp
+.*.iso.*.tmp
+
+# Launcher runtime state and extracted (copyrighted) artwork
+launcher/assets/
+launcher/cache/
+launcher/portal/
+
+# Junk
+.DS_Store
+__pycache__/
+*.pyc
