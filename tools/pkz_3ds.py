@@ -2,16 +2,21 @@
 """Read the 3DS build's `.pkz` containers (Skylanders: SuperChargers Racing).
 
 The 3DS romfs next to the Wii disc ships the same game data in a different
-wrapper, and both halves of that were worked out from the files themselves:
+wrapper, and every part of that was worked out from the files themselves:
 
   * the container is **little-endian** (the Wii build is big-endian): the root
     chunk of a plain container starts `01 00 00 80` = tag `0x80000001`;
   * the chunk header is the same 16 bytes, but the two `u32`s swap places —
     on the Wii it is `tag, u16, u16, 0, len`, on the 3DS `tag, u16, u16, len, 0`;
-  * a container that starts `b0 b1 be ba` is **zlib-compressed**: an 0x8000-byte
-    header (+0x04 = where the payload starts, +0x0C = the uncompressed size, all
-    little-endian, the rest 0xAA fill) followed by one or more zlib streams, each
-    inflating to a little-endian roceGS stream.
+    the type word inside a payload is still big-endian (`4BBD2CFD` = stats on both
+    builds), only the ids and fields around it are little-endian;
+  * a container that starts `b0 b1 be ba` is a **package archive**: a header
+    (+0x04 where the packages start, +0x0C/+0x18 uncompressed totals, the rest
+    0xAA fill), then one u32 per 0x4000-byte block at +0x30 naming the package
+    that block belongs to (0 = the header, 0xAAAAAAAA = the fill after the map),
+    then one zlib stream per package, each inflating to a little-endian roceGS
+    stream. Files with a single package (e.g. `BaseSkylander.pkz`) have no map
+    to speak of and just hold the one stream at 0x8000.
 
 Proof it is the same data: `BaseSkylander.pkz` on the 3DS inflates to 174,028
 bytes, exactly its header's size, and that stream carries 343 `0x138D` object
@@ -55,6 +60,8 @@ import zlib
 MAGIC = b"\xb0\xb1\xbe\xba"
 PLAIN_TAG = b"\x01\x00\x00\x80"
 PAYLOAD_OFF = 0x8000
+BLOCK = 0x4000          # the granularity the header's block map counts in
+MAP_OFF = 0x30          # one u32 per block: which package owns it (0 = header)
 
 WRAP = 0x8000138D
 KEYC = 0x8000138E
@@ -74,16 +81,7 @@ def header(d):
     return u32(d, 4), u32(d, 0x0C)
 
 
-def find_stream(d, start):
-    """Offset of the next zlib stream header at or after `start`."""
-    for o in range(start, len(d) - 1):
-        if d[o] == 0x78 and ((0x78 << 8) | d[o + 1]) % 31 == 0:
-            if inflate(d, o, limit=4096)[0]:
-                return o
-    return None
-
-
-def inflate(d, off, limit=None, chunk=8192):
+def inflate(d, off, limit=None, chunk=8192, stop=None):
     """Inflate one zlib stream at `off`; on a stream error keep what we got.
 
     The containers hold several streams back to back, so a short/corrupt tail is
@@ -92,7 +90,7 @@ def inflate(d, off, limit=None, chunk=8192):
     """
     oo = zlib.decompressobj(15)
     out = bytearray()
-    for i in range(off, len(d), chunk):
+    for i in range(off, stop if stop is not None else len(d), chunk):
         try:
             out += oo.decompress(d[i:i + chunk])
         except zlib.error:
@@ -104,11 +102,48 @@ def inflate(d, off, limit=None, chunk=8192):
     return bytes(out[:limit] if limit else out), oo.eof
 
 
+def find_stream(d, start):
+    """Offset of the next zlib stream at or after `start` that inflates at all."""
+    for o in range(start, len(d) - 1):
+        if d[o] == 0x78 and ((0x78 << 8) | d[o + 1]) % 31 == 0:
+            if inflate(d, o, limit=4096)[0]:
+                return o
+    return None
+
+
+def package_offsets(d):
+    """Where the packaged streams start.
+
+    The header is followed by one u32 per 0x4000-byte block naming the package
+    that block belongs to (0 = the header, 0xAAAAAAAA = the fill after the
+    table), which is enough to find the one-package files but *not* the big
+    archives: on those the streams only line up under the progressive walk in
+    `streams()` below (see the note in the docstring). So use the table only as
+    the single-package answer and let the walk do the rest.
+    """
+    offs = sorted({i * BLOCK for i, v in ((i * BLOCK, u32(d, MAP_OFF + i * 4))
+                                          for i in range(len(d) // BLOCK))
+                   if v != 0 and v != 0xAAAAAAAA})
+    return [offs[0]] if len(offs) <= 1 else []
+
+
 def streams(d):
-    """Every zlib stream in the file, in order, with the bytes it inflates to."""
-    out = []
+    """Every packaged stream in the file, in order, with what it inflates to.
+
+    A container that is one package (its header lists one) is just a stream at
+    0x8000. A big archive is a sequence of them, and where one ends is not
+    written down anywhere this reader has found: the next one is taken to be the
+    next zlib header after a conservative guess at the end of this one. That is
+    how the objects below were located, so treat a big archive's package
+    boundaries as a working approximation rather than a parsed structure.
+    """
+    single = package_offsets(d)
+    if single:
+        data, eof = inflate(d, single[0])
+        return [(single[0], data, eof)] if data else []
     pos = PAYLOAD_OFF if d[:4] == MAGIC else 0
-    while pos is not None and pos < len(d) - 1:
+    out = []
+    while pos < len(d) - 1:
         nxt = find_stream(d, pos)
         if nxt is None:
             break
@@ -120,15 +155,14 @@ def streams(d):
 
 
 def load(path):
-    """(kind, inner roceGS bytes, [(offset, size, complete), ...])."""
+    """(kind, [one little-endian roceGS stream per package], [(offset, size)])."""
     d = open(path, "rb").read()
     if d[:4] == PLAIN_TAG:
-        return "plain", d, []
+        return "plain", [d], []
     if d[:4] != MAGIC:
-        return "unknown", d, []
+        return "unknown", [d], []
     parts = streams(d)
-    inner = b"".join(p for _, p, _ in parts) if parts else b""
-    return "zlib", inner, [(o, len(p), e) for o, p, e in parts]
+    return "zlib", [p for _, p, _ in parts], [(o, len(p)) for o, p, _ in parts]
 
 
 # ------------------------------------------------------------------- objects
@@ -200,25 +234,23 @@ def read_wrapper(d, w):
     return key, name, refs, payload, plen
 
 
-def objects(inner, tolerant=True):
-    """Every named object: the strict walk first, then a tolerant sweep.
+def scan_section(section):
+    """Named objects in one package: the strict walk, then a tolerant sweep.
 
     The 3DS chunk stream is not framed exactly like the Wii one in every object,
     so a single bad header can cut the walk short. The sweep takes every
     `0x138D` tag as a wrapper start and reads the key chunk out of its own span,
     which survives headers this reader has not seen yet.
     """
-    rows = [o for o in (read_wrapper(inner, w) for w in wrappers(inner)) if o[1]]
-    if not tolerant:
-        return rows
+    rows = [o for o in (read_wrapper(section, w) for w in wrappers(section)) if o[1]]
     seen = {r[0] for r in rows}
-    for m in re.finditer(re.escape(WRAP.to_bytes(4, "little")), inner):
+    for m in re.finditer(re.escape(WRAP.to_bytes(4, "little")), section):
         w = m.start()
-        ln = u32(inner, w + 8) if w + 16 <= len(inner) else 0
-        end = min(len(inner), w + 16 + ln) if 16 <= ln < (1 << 24) else min(len(inner), w + 0x800)
-        span = inner[w:end]
+        ln = u32(section, w + 8) if w + 16 <= len(section) else 0
+        end = min(len(section), w + 16 + ln) if 16 <= ln < (1 << 24) else min(len(section), w + 0x800)
+        span = section[w:end]
         k = span.find(KEYC.to_bytes(4, "little"))
-        if k < 0:
+        if k < 0 or k + 20 > len(span):
             continue
         key = u32(span, k + 16)
         if key in seen:
@@ -233,6 +265,14 @@ def objects(inner, tolerant=True):
     return rows
 
 
+def objects(sections):
+    """Named objects across every package, in file order."""
+    rows = []
+    for section in sections:
+        rows += scan_section(section)
+    return rows
+
+
 # ---------------------------------------------------------------------- main
 
 def main():
@@ -244,7 +284,7 @@ def main():
     ap.add_argument("--unpack", metavar="OUT", help="write the inner roceGS stream")
     args = ap.parse_args()
 
-    kind, inner, parts = load(args.file)
+    kind, sections, parts = load(args.file)
     size = os.path.getsize(args.file)
     if kind == "unknown":
         print("%s: not a roceGS container (starts %s)"
@@ -255,13 +295,18 @@ def main():
                                           else "zlib-wrapped little-endian"))
     if kind == "zlib":
         off, unc = header(open(args.file, "rb").read())
-        print("   header: payload at 0x%X, uncompressed %d bytes" % (off, unc))
-        for o, n, eof in parts:
-            print("   stream at 0x%06X -> %d bytes%s" % (o, n, "" if eof else " (tail cut)"))
-    rows = objects(inner)
-    print("   %d objects in %d bytes" % (len(rows), len(inner)))
+        print("   header: packages from 0x%X, %d bytes in %d of them"
+              % (off, unc, len(parts)))
+        for o, n in parts[:6]:
+            print("   package at 0x%06X -> %d bytes" % (o, n))
+        if len(parts) > 6:
+            print("   ... and %d more" % (len(parts) - 6))
+    rows = objects(sections)
+    print("   %d objects in %d bytes" % (len(rows), sum(len(s) for s in sections)))
     if args.unpack:
-        open(args.unpack, "wb").write(inner)
+        with open(args.unpack, "wb") as fh:
+            for section in sections:
+                fh.write(section)
         print("   wrote %s" % args.unpack)
     if args.list:
         for key, name, refs, payload, plen in rows:

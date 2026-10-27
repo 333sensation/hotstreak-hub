@@ -22,6 +22,26 @@ exact size and the disc keeps loading.
 | **Launcher** | a tkinter window: PLAY (roll + patch + repack + boot), pin figures, netplay session codes for two-machine split-screen, export to an SD card layout for a real Wii |
 | **Your Skylander** | the figure *you* race as comes from the Portal of Power, not the pkz — the launcher installs the chosen 1024-byte tag image into the emulated portal and enables it in Dolphin |
 
+## The 3DS build
+
+The 3DS romfs is the same game data in a little-endian, zlib-wrapped container
+(`tools/pkz_3ds.py` reads it), and the stats mod ports onto it:
+
+```sh
+python3 tools/pkz_3ds_stats.py <dump>/romfs/0004000000165E00/Data/BaseSkylander.pkz \
+    --out 3ds/titles/0004000000165E00/romfs/Data/BaseSkylander.pkz \
+    --compare disc/files/Data/BaseSkylander.pkz
+```
+
+Same scheme, same 3.0 budget, same archetypes - and 198 of the 203 figures come
+out with the **same spread the Wii build's patch gives them**. The file keeps its
+exact size, and the result is laid out for Luma's layeredfs, so the romfs needs
+no repack: copy `3ds/titles/...` over your SD card's `luma/titles/...`.
+
+The opponent cast and cups are not ported yet - the 3DS build has no
+`RacerAIInfo` records to recast where this reader can see them, and its online
+mode's endpoints live in its executable, not in the romfs. `FINDINGS.md` has both.
+
 ## Promo clip
 
 [![The promo clip: 32 seconds of the mod](docs/promo.gif)](promo/promo.mp4)
@@ -235,6 +255,7 @@ no arguments (`python3 tools/pkz_objects.py`).
 | `make_promo.py` | render `promo/promo.mp4`: game art, game music, one ffmpeg pipe |
 | `pkz_textures.py` | list/export every texture in a container |
 | `pkz_3ds.py` | read the 3DS build's containers (little-endian, zlib-wrapped) — used to settle what the 4-player mode needs |
+| `pkz_3ds_stats.py` | the stats mod, ported to the 3DS romfs: same spreads on 198 of 203 figures, written back at the same size |
 
 The rest (`pkz_ai_add`, `pkz_ai_append`, `pkz_pool_grow`, `pkz_pool_all`,
 `pkz_pool_fill`, `pkz_add_test`, `pkz_pool_terrain`, `pkz_text_scan`,

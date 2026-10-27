@@ -775,6 +775,94 @@ is a boot test, because leaving the load screen needs input (see "The base that
 ships"). Everything else about the mode already works: the four multiplayer race
 playlists, the cups, the split-screen HUDs and the 2P flow.
 
+## Applied mod: the stats patch, ported to the 3DS build
+
+`tools/pkz_3ds_stats.py` is `pkz_stats_patch.py` for the 3DS romfs. It imports
+the Wii tool's scheme (archetypes, 3.0 budget, 0.05 grid, the roster-wide
+"no two spreads alike" pass) rather than reimplementing it, so the seed is the
+figure's name and the names are the same on both builds:
+
+    3DS  0101_SwarmStats            shipped 0.00 0.00 0.00 0.00 0.00
+                                   patched 0.50 1.00 0.10 1.00 0.40
+
+What had to be rewritten is only the container: the file is a little-endian
+roceGS stream inside one zlib stream (`pkz_3ds.py`), the stat body is the same 36
+bytes, and on this build the five floats are little-endian where the Wii's are
+big-endian. The type word is big-endian on both.
+
+Written back at the **same size**: re-deflate the patched stream, update the
+header's compressed size (+0x10), pad the tail with the `0xDA` the original used,
+and refuse rather than guess when the new stream does not fit. Verified on
+`BaseSkylander.pkz` (98304 bytes in, 98304 out):
+
+* 203 stat records found, **148 of them all-zero - the same 148 stubs the Wii
+disc ships**, so this build's roster has exactly the same hole in it;
+* 3,245 bytes changed, and **0 of them outside a stat record's 20 float bytes**;
+* the object count is unchanged (343), the uncompressed size is unchanged
+  (174,028), only the compressed size moves (63,505 -> 26,159) and the freed room
+  becomes `0xDA` padding;
+* every record totals 3.00, **203 distinct spreads**, none left all-zero, all
+  values on the 0.05 grid, and re-running the tool reproduces the file;
+* **198 of the 203 figures get the identical spread the Wii build's patch gives
+them** (`--compare` checks this figure by figure). The five that differ: two
+records on the 3DS ship **no name of their own** (the printable run after the body
+belongs to the next object, so they are seeded from their object id instead of a
+borrowed name), two are named `..._EonsElite_Stat` where the Wii says `_Stats`,
+and one is collateral - the uniqueness pass walks a repeated spread off whatever
+the figure before it took, and this roster is a shade different.
+
+Install: Luma's layeredfs, no romfs repack -
+
+    python3 tools/pkz_3ds_stats.py <romfs>/Data/BaseSkylander.pkz \
+        --out 3ds/titles/0004000000165E00/romfs/Data/BaseSkylander.pkz
+
+Not verified: the pips on screen. The check above is container-level, and there
+is no 3DS emulator in this repo to boot it on.
+
+## The bot patch on the 3DS: not portable yet
+
+`pkz_random_bots.py` recasts the Wii's 71 `RacerAIInfo` records. This build's
+`BaseGameplay.pkz` has none: reading it with `pkz_3ds.py` gives 1,236 objects and
+the only AI-shaped name among them is `RacerAISpawner`, which is a class in the
+identifier table, not racer data. Two possibilities, and they need different work:
+
+* the 3DS definition of who an opponent is lives somewhere this reader does not
+  reach yet - `Main.pkz` still resolves to 0 objects and a level file to ~185 of
+  its thousands, because where one package's zlib stream ends and the next begins
+  is approximated rather than parsed (the header's block table is not fully
+  understood; `pkz_3ds.py` says so);
+* or this build drives its opponents from its own classes, in which case the
+  patch has to be redesigned against them rather than ported.
+
+So the honest order is: finish the package framing, then look for the racer
+records, then port. Writing a 3DS bot patcher now would be guessing.
+
+## An alternative server for the 3DS online mode
+
+The 3DS build's competition mode is **local play or online with up to four
+players**, and the online half needed a Nintendo Network account (Activision's own
+support page: "your console must be signed into an active ... Nintendo Network
+account"); 3DS online was shut down in 2024.
+
+There is nothing to point at a private server from this dump:
+
+* the endpoints are not in the romfs. Searching the whole 3DS `Data/` tree for
+  hostnames finds none - the only `.net/.com` strings in there are animation
+  names (`rumble.ca`, `strongloop.ca`, ...). On the Wii build the same strings
+  live in the ELF (`stun.{us,eu,jp,au}.demonware.net`, the Demonware LSG calls),
+  i.e. in code, and a 3DS romfs dump does not contain code;
+* the client itself is the dead half even if the address were patched: the Wii
+  build shows what the client is (Demonware `bdLobby` / `GLAPINetwork`, a
+  proprietary protocol with no public documentation), and no community server for
+  this game exists - Pretendo reimplements Nintendo Network, not a third-party
+game backend.
+
+To make progress on that half, the piece this dump does not have is the 3DS
+**executable** (`code.bin`/exefs). With it the endpoint table and the TLS/auth
+path can be found and described, which is the step before any server could be
+written. The rest of the mod - stats above, and local 4-player play, whether on
+this build or the Wii one - needs no server at all.
+
 ## Reading the 3DS build (`tools/pkz_3ds.py`)
 
 The 3DS romfs is the same game data in a different wrapper, and both differences
