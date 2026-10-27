@@ -142,15 +142,29 @@ every character ends up with real values: the 148 empty character records are
 filled and the 55 that already shipped numbers are regenerated onto the same
 scheme. Scheme:
 
-* one of five archetypes (speedster, bruiser, technical, gunner, all-rounder)
-  picked from a CRC32 of the figure's own name, then each stat jittered
-  multiplicatively, so two figures on the same archetype still differ;
-* snapped to the **0.05 grid** the disc itself uses and normalised to a total of
-  **3.0** per figure — the same budget as the old "balanced" scheme, so the
-  roster stays fair;
+* one of **nine spiked archetypes** (rocket, sprinter, cornerer, drifter,
+  bruiser, juggernaut, gunner, brawler, all-rounder) picked from a CRC32 of the
+  figure's own name, then each stat jittered multiplicatively (0.70–1.30), so two
+  figures on the same archetype still differ;
+* each archetype sums to exactly **3.0** on its own and maxes one stat while
+  starving another — a rocket is 1.00 speed at 0.10 armour, a bruiser 1.00 armour
+  and 1.00 firepower at 0.25 speed — so a figure's spread reads as an identity
+  rather than as five numbers hovering around the middle;
+* snapped to the **0.05 grid** the disc itself uses and normalised back to a total
+  of **3.0** per figure — the same budget every figure always had, so nothing is
+  stronger on paper, only shaped differently. The rounding remainder is given to
+  the biggest stat with room and taken from the smallest one that has any, which
+  keeps a spiked shape spiked instead of sanding it towards the middle, and a stat
+  is never left at 0.0 (floor 0.05), because a figure with no top speed would not
+  drive;
+* a spread that still repeats is walked off the numbers somebody else holds, one
+  0.05 step at a time, so "no two figures share a spread" survives the spiking:
+  the spiked shapes clamp a stat at 1.00 often enough that 27 records collided
+  before that pass and **none do after it**;
 * a `_Dark` / `_LG` / `EonsElite` variant keeps its base figure's spread with
   0.10 moved from its weakest stat to its strongest one that still has room
-  (Whirlwind's armor is already 1.00), so a variant never comes out identical to
+  (Whirlwind's armor is already 1.00) and a weakest stat already on the floor is
+  skipped rather than pushed to zero, so a variant never comes out identical to
   its base: same budget, sharper feel — what the disc's own variant numbers do
   (base 2.5, variant 3.0);
 * SWAP Force halves keep their own record (a Legs record and a Body record for
@@ -164,16 +178,22 @@ regenerates all 101 anyway.
 
 Verification performed on the patched file:
 
-* 216 records written (203 characters + 13 villain hulls), 3,485 bytes changed of
+* 216 records written (203 characters + 13 villain hulls), 3,499 bytes changed of
   318,772 — every changed byte inside a 20-byte float field, file size identical;
 * `all-zero records left: 0`; every character record sums to exactly 3.00 and
-  every value is inside 0.0–1.0;
-* 197 distinct spreads across the 203 character records (largest group: 2);
+  every value is inside 0.05–1.00;
+* **203 distinct spreads across the 203 character records**, none shared;
+* the budget is unchanged and the spend is not: the mean stat is 0.60 before and
+  after, but the mean spread of a figure grows from 0.58 to **0.76**, stats at
+  0.05–0.15 go from 1 to **69**, stats pinned at 1.00 from 102 to 190, and the
+  range under the tier list's lap weights widens from 1.67–2.53 to 1.61–2.63 — the
+  same three points, spent far more unevenly;
+* re-running the tool on its own output reproduces the file byte for byte;
 * the chunk tree still tiles and the object-type histogram is unchanged
   (`pkz_pool_grow.tree_ok`), i.e. nothing moved but the floats;
 * `wit copy disc skylanders-scr-mod.wbfs` → `wit verify` reports
   `+OK ... DATA SKNE52` (11 s), and extracting `files/Data/BaseSkylander.pkz`
-  from the image gives md5 `e8a14b7febb68269b430f829e2fb71a5`, the same as
+  from the image gives md5 `b74d29363041ca175717ed30f37091ea`, the same as
   the patched file in `disc/`.
 
 Two things nobody has verified: **reading the pips in game** (the check above is
@@ -572,7 +592,8 @@ Revert with `cp backups/BaseGameplay.pkz.pristine disc/files/Data/BaseGameplay.p
 | `BaseGameplay.pkz.working-randomcast` | the image confirmed working in game (villain swap + random cast) |
 | `BaseGameplay.pkz.probe-spyro` | +1 inserted object (`DriverSpyro_Land_AIInfo`), untested |
 | `BaseGameplay.pkz.412-infos-hangs` | the all-figures insertion that hangs on load |
-| `BaseSkylander.pkz.pristine` / `.stats` | untouched / balanced-stats |
+| `BaseSkylander.pkz.pristine` | untouched original |
+| `BaseSkylander.pkz.stats` | the superseded first stats patch (five even profiles) |
 
 ## Failed attempt: an AI info for every figure, every terrain (reverted)
 
@@ -639,8 +660,9 @@ copy into a new `RacerAIInfo`.
 
 As shipped now: `BaseGameplay.pkz` = pristine + the villain key swap in the four
 driver pools + those 15 villain records re-pointed at a random cast of playable
-figures (all in place, size unchanged); `BaseSkylander.pkz` = balanced stats
-(194 characters rewritten in place, 3071 bytes changed, file size unchanged).
+figures (all in place, size unchanged); `BaseSkylander.pkz` = spiked stats for
+every figure (216 records rewritten in place, 3,499 bytes changed, file size
+unchanged, md5 `b74d29363041ca175717ed30f37091ea`).
 `skylanders-scr-mod.wbfs` was repacked from that tree and verified
 (`wit verify` → `+OK … SKNE52`, both files inside the image compare equal to the
 working tree), and the game starts and loads with it.
@@ -782,16 +804,22 @@ Current state of the shipped data (`backups/BaseSkylander.pkz.pristine`, md5
 
 | | |
 |---|---|
-| stats objects | 194 character/driver entries + 16 vehicle (`Plane/Car/Boat_Stats`) |
-| distinct value sets | **46** (one of them is all-zero) |
-| toy numbers with any real values | **31 of 168** (21 of 45 Spyro's Adventure, 10 SuperChargers, 14 non-figure entries) |
-| toy numbers with only zeros | **137** (all of Giants 01xx, Trap Team 04xx, minis 05xx, SWAP Force 10xx/20xx, Trap Team characters 30xx, half the SuperChargers) |
+| stats objects, counted by object type | **304**: 203 character/driver entries + 101 vehicle (`*_Stats_Mod_0/1/2/SC`, `*Plane/Car/Boat_Stats`, `RentAWreck_*`) |
+| distinct value sets | **114** (one of them is all-zero) |
+| records that are all-zero | **161** (148 character records + 13 villain hulls) |
+| non-empty character records | **55**, holding 54 distinct spreads |
+| toy numbers with any real values | **34 of 168** |
 
-So the disc itself only ships distinct racing numbers for a third of the roster;
-the rest are zero-stubs - there is no per-figure stats object for them anywhere
-else (`BaseGameplay.pkz` and `Common.pkz` have none). Two same-toy cases differ
-too: `0005_TerrafinStats` has values while `0005_Terrafin_EonsElite_Stats` is all
-zeros.
+The name-suffix scan this section first used found only 194 of those 304, and the
+old tool inherited that: 92 records do not end in `Stats` (the vehicle mod
+stages) and 27 keep the key in front of the name in the key chunk, so a
+printable-run regex read the key as the name. Counting by type is the fix.
+
+So the disc ships real racing numbers for only 55 of its 203 character records
+(34 of the 168 toys); the other 148 are zero-stubs - there is no per-figure stats
+object for them anywhere else (`BaseGameplay.pkz` and `Common.pkz` have none).
+Two same-toy cases differ too: `0005_TerrafinStats` has values while
+`0005_Terrafin_EonsElite_Stats` is all zeros.
 
 The first version of `tools/pkz_stats_patch.py` collapsed every character onto
 **5 profiles**, which is why a tree patched with it played identically figure to

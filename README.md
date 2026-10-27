@@ -17,7 +17,7 @@ exact size and the disc keeps loading.
 | | |
 |---|---|
 | **Random cast** | every boot fields a different set of opponents: `launcher/` rolls a cast over the disc's 224 catalogue figures and patches the 71 slots, then repacks the image (~10 s) |
-| **Stats for every figure** | `tools/pkz_stats_patch.py` fills in all 203 character stat records — 148 of them ship as empty stubs — with one generated spread per figure, so no two drive alike |
+| **Stats for every figure** | `tools/pkz_stats_patch.py` fills in all 203 character stat records — 148 of them ship as empty stubs — with one spiked spread per figure: every figure gets the same three points and spends them very differently, so no two drive alike |
 | **Random cups** | `tools/pkz_cup_random.py` re-points the three cup playlists at a fresh order of the disc's own circuits |
 | **Launcher** | a tkinter window: PLAY (roll + patch + repack + boot), pin figures, netplay session codes for two-machine split-screen, export to an SD card layout for a real Wii |
 | **Your Skylander** | the figure *you* race as comes from the Portal of Power, not the pkz — the launcher installs the chosen 1024-byte tag image into the emulated portal and enables it in Dolphin |
@@ -227,7 +227,7 @@ no arguments (`python3 tools/pkz_objects.py`).
 | `pkz_objects.py` | parse a `.pkz`, list its objects and resolve the 32-bit ids they reference — start here |
 | `pkz_refs.py` | the per-object reference tables (the character/vehicle refs live here) |
 | `pkz_random_bots.py` | recast the 71 racer slots as a random cast (what the launcher runs) |
-| `pkz_stats_patch.py` | give every character its own racing stats; fills the 148 empty stat records |
+| `pkz_stats_patch.py` | give every character its own racing stats — a spiked spread per figure, same 3.0 total; fills the 148 empty stat records |
 | `pkz_cup_random.py` | re-point the three cup playlists at the disc's own circuits |
 | `pkz_pool_swap.py` | move villains into the driver pools without resizing anything |
 | `extract_art.py` | pull portraits, minimaps and menu backgrounds out as PNG |
@@ -243,8 +243,9 @@ them; several of them shift offsets and hang the game, so do not run them on a
 tree you care about.
 
 [`TIERLIST.md`](TIERLIST.md) ranks all 182 figures best to worst from the stats
-`pkz_stats_patch.py` writes — with the weights spelled out, since every figure
-totals the same 3.0 and the order depends on what you value.
+`pkz_stats_patch.py` writes, in tiers cut from the roster into fifths — with the
+weights spelled out, since every figure totals the same 3.0 and the order depends
+on what you value.
 
 ## Notes
 

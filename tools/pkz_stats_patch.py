@@ -17,13 +17,15 @@ provides them (`BaseGameplay.pkz` and `Common.pkz` have no character stats), so
 they have to be generated.
 
 That is what this tool does: **every character record ends up with real values,
-and no two figures share a spread.** Each figure gets one of five archetypes
-picked from a CRC32 of its own name, jittered per figure, snapped to the 0.05
-grid the disc uses and normalised to a total of 3.0 - the same budget the old
-"balanced" scheme used, so the roster stays fair while every figure drives
-differently. A variant (Dark / Legendary / Eon's Elite) keeps its base figure's
-spread with 0.10 moved from its weakest stat to its strongest: same budget,
-sharper feel, which is what the disc's own variant numbers do.
+and no two figures share a spread.** Each figure gets one of nine **spiked**
+archetypes picked from a CRC32 of its own name - shapes that max one stat and
+starve another - jittered per figure, snapped to the 0.05 grid the disc uses and
+normalised to a total of 3.0. The budget is the same three points it has always
+been, so the roster stays fair; what the shapes change is how far apart the
+figures sit, so a weakness is as plain as a strength. A variant (Dark /
+Legendary / Eon's Elite) keeps its base figure's spread with 0.10 moved off its
+weakest stat onto its strongest that still has room: same budget, sharper feel,
+which is what the disc's own variant numbers do.
 
 Vehicle records are left alone by default (the 20 player vehicles and the
 `RentAWreck_*` hulls already ship real, tuned numbers - they are not characters).
@@ -57,6 +59,7 @@ FLOAT_OFF = 0x20        # from the 0x1391 chunk header: +0x10 header, +0x10 body
 STAT_NAMES = ("TopSpeed", "Acceleration", "Armor", "Handling", "FirePower")
 TOTAL = 3.0             # budget per figure, as in the old balanced scheme
 STEP = 20               # 0.05 grid: value * 20 is an integer
+FLOOR = 1               # 0.05 is as low as a stat goes, so nothing is stuck
 
 VEHICLE_RE = re.compile(r"(Plane|Car|Boat)_Stats$|^RentAWreck_|_Stats_Mod_", re.I)
 MOD_SINGLE_RE = re.compile(r"_Stats_Mod_[12]$", re.I)
@@ -67,13 +70,22 @@ RANGES = (("00", "Spyro's Adventure"), ("01", "Giants"), ("04", "Trap Team 04xx"
           ("05", "minis"), ("10", "SWAP Force legs"), ("20", "SWAP Force body"),
           ("30", "Trap Team 30xx"), ("34", "SuperChargers"))
 
-# relative shapes, scaled to TOTAL afterwards; one dominant stat each
+# Relative shapes, scaled to TOTAL afterwards. Each one sums to exactly 3.00
+# already, so on a no-jitter draw the scaling is a no-op and the shape is what
+# the disk gets. They are deliberately spiked - every archetype but the last
+# maxes a stat and starves another, so the spread reads as an identity instead
+# of five numbers hovering around the middle.
 ARCHETYPES = {
-    "speedster":   (1.00, 0.55, 0.20, 0.80, 0.45),
-    "bruiser":     (0.45, 0.30, 1.00, 0.50, 0.75),
-    "technical":   (0.50, 0.65, 0.40, 1.00, 0.45),
-    "gunner":      (0.55, 0.45, 0.50, 0.40, 1.00),
-    "all-rounder": (0.65, 0.65, 0.55, 0.65, 0.50),
+    # TopSpeed, Acceleration, Armor, Handling, FirePower
+    "rocket":      (1.00, 0.85, 0.10, 0.70, 0.35),   # flat out, no armour
+    "sprinter":    (1.00, 1.00, 0.15, 0.50, 0.35),   # away from the line, nothing else
+    "cornerer":    (0.45, 0.95, 0.15, 1.00, 0.45),   # launch and grip
+    "drifter":     (0.75, 0.50, 0.10, 1.00, 0.65),   # turns, cannot take a hit
+    "bruiser":     (0.25, 0.20, 1.00, 0.55, 1.00),   # armour and guns, no pace
+    "juggernaut":  (0.15, 0.35, 1.00, 0.70, 0.80),   # the heavy
+    "gunner":      (0.70, 0.30, 0.50, 0.50, 1.00),   # hits and runs
+    "brawler":     (0.40, 0.45, 0.85, 0.30, 1.00),   # punches, cannot turn
+    "all-rounder": (0.75, 0.65, 0.45, 0.60, 0.55),   # solid everywhere, best at nothing
 }
 
 
@@ -142,24 +154,31 @@ def category(name):
 
 # ------------------------------------------------------------------- profiles
 def _grid(weights, total):
-    """Scale `weights` to `total` on the 0.05 grid, clamped to 0.0-1.0."""
+    """Scale `weights` to `total` on the 0.05 grid, clamped to FLOOR-1.0.
+
+    Whatever is left over after rounding is handed to the *biggest* stat with
+    room and taken from the *smallest* one that has any, never spread evenly:
+    that keeps a spiked shape spiked instead of sanding it towards the middle.
+    """
     s = sum(weights)
     v = [int(round(w / s * total * STEP)) for w in weights]
-    v = [min(STEP, max(0, x)) for x in v]
+    v = [min(STEP, max(FLOOR, x)) for x in v]
     delta = int(round(total * STEP)) - sum(v)
-    order = sorted(range(5), key=lambda i: -v[i])
-    i = 0
-    while delta:
-        j = order[i % 5]
-        if delta > 0 and v[j] < STEP:
-            v[j] += 1
+    guard = 0
+    while delta and guard < 10_000:
+        guard += 1
+        if delta > 0:
+            room = [i for i in range(5) if v[i] < STEP]
+            if not room:
+                break
+            v[max(room, key=lambda i: (v[i], -i))] += 1
             delta -= 1
-        elif delta < 0 and v[j] > 0:
-            v[j] -= 1
+        else:
+            low = [i for i in range(5) if v[i] > FLOOR]
+            if not low:
+                break
+            v[min(low, key=lambda i: (v[i], i))] -= 1
             delta += 1
-        i += 1
-        if i > 10_000:
-            break
     return tuple(x / STEP for x in v)
 
 
@@ -169,24 +188,84 @@ def profile(base, total=TOTAL):
     arch = ARCHETYPES[sorted(ARCHETYPES)[rng.randrange(len(ARCHETYPES))]]
     # multiplicative so the archetype's shape survives; wide enough that two
     # figures landing on the same archetype still land on different spreads
-    jitter = [max(0.05, a * rng.uniform(0.65, 1.35)) for a in arch]
+    jitter = [max(0.05, a * rng.uniform(0.70, 1.30)) for a in arch]
     return _grid(jitter, total)
+
+
+def figure_spread(base, var):
+    """The spread a character record wants before the roster-wide check."""
+    v = profile(base)
+    return sharpen(v, steps=2) if var else v
+
+
+def _nudge(g, seen):
+    """Walk one 0.05 step away from `g` onto a spread nobody holds yet.
+
+    Pair order follows the shape: the smallest stat with room gives first, the
+    largest that can take the step is tried first, so the move widens the spread
+    instead of flattening it. False means every step from here is taken.
+    """
+    los = sorted((i for i in range(5) if g[i] > FLOOR), key=lambda i: (g[i], i))
+    his = sorted((i for i in range(5) if g[i] < STEP), key=lambda i: (-g[i], i))
+    for lo in los:
+        for hi in his:
+            if hi == lo:
+                continue
+            g[lo] -= 1
+            g[hi] += 1
+            if tuple(x / STEP for x in g) not in seen:
+                return True
+            g[lo] += 1
+            g[hi] -= 1
+    return False
+
+
+def diversify(spreads):
+    """Make a list of spreads unique, moving whole 0.05 steps of the same budget.
+
+    A spiked archetype pins its best stat at 1.00 often enough that two figures
+    can round onto the same five numbers, and "no two figures share a spread" is
+    the point of the scheme, so a repeat is walked one step at a time - taken
+    from the smallest stat with room, given to the largest one that has any -
+    until it lands on a spread nobody else holds. Every move keeps the total at
+    3.0 and widens the shape rather than flattening it. Spreads that are already
+    unique (the common case) come back untouched, and the walk is bounded, so a
+    figure that cannot be separated keeps its spread and the count in the report
+    shows it.
+    """
+    seen = set()
+    out = []
+    for v in spreads:
+        g = [int(round(x * STEP)) for x in v]
+        for _ in range(24):
+            if tuple(x / STEP for x in g) not in seen:
+                break
+            if not _nudge(g, seen):
+                break
+        spread = tuple(x / STEP for x in g)
+        seen.add(spread)
+        out.append(spread)
+    return out
 
 
 def sharpen(v, steps=2):
     """Move `steps` grid steps from the weakest stat to the strongest with room.
 
     A figure that already maxes one stat (Whirlwind's armor is 1.00) cannot take
-    the boost there, so it goes to the next strongest - otherwise every variant
-    of that figure would come out identical to its base.
+    the boost there, so it goes to the next strongest, and a weakest stat that is
+    already on the floor is skipped rather than pushed to zero - otherwise every
+    variant of that figure would come out identical to its base.
     """
     g = [int(round(x * STEP)) for x in v]
     for _ in range(steps):
-        lo = min(range(5), key=lambda i: g[i])
-        room = [i for i in range(5) if i != lo and g[i] < STEP]
-        if not room or g[lo] == 0:
+        lows = [i for i in range(5) if g[i] > FLOOR]
+        if not lows:
             break
-        hi = max(room, key=lambda i: g[i])
+        lo = min(lows, key=lambda i: (g[i], i))
+        room = [i for i in range(5) if i != lo and g[i] < STEP]
+        if not room:
+            break
+        hi = max(room, key=lambda i: (g[i], -i))
         g[lo] -= 1
         g[hi] += 1
     return tuple(x / STEP for x in g)
@@ -233,17 +312,24 @@ def main():
     print("%s: %d stat records - %d character, %d vehicle; %d all-zero"
           % (args.path, len(recs), len(chars), len(vehs), len(zero)))
 
+    # character spreads are decided together, in file order, so that a repeat
+    # can be nudged off another figure's numbers before anything is written.
+    car_offs = [off for off, name in recs if not VEHICLE_RE.search(name)]
+    car_named = {off: split_name(name) for off, name in recs
+                 if not VEHICLE_RE.search(name)}
+    car_new = dict(zip(car_offs, diversify([figure_spread(*car_named[o])
+                                           for o in car_offs])))
+
     todo, kept = [], []
     for off, name in recs:
         old = struct.unpack_from(">5f", raw, off)
-        is_vehicle = bool(VEHICLE_RE.search(name))
-        if is_vehicle and not args.vehicles and any(old):
-            kept.append((off, name, old))       # tuned vehicle numbers stay
-            continue
-        base, var = split_name(name)
-        new = vehicle_profile(name) if is_vehicle else profile(base)
-        if var:
-            new = sharpen(new, steps=2)
+        if VEHICLE_RE.search(name):
+            if not args.vehicles and any(old):
+                kept.append((off, name, old))   # tuned vehicle numbers stay
+                continue
+            new = vehicle_profile(name)
+        else:
+            new = car_new[off]
         todo.append((off, name, old, new))
 
     # ------------------------------------------------------------- report

@@ -1,21 +1,23 @@
 # Best to worst: every figure in the mod
 
-Ranked from the patched `disc/files/Data/BaseSkylander.pkz` — the 203 character
+Ranked from the patched `disc/files/Data/BaseSkylander.pkz` - the 203 character
 records `tools/pkz_stats_patch.py` writes, collapsed to one line per figure
 (**182 figures**: 168 toys + 14 villains; the `_Dark` / `_LG` / `Eon's Elite`
 variants share their base figure's line).
 
 Three things to keep in mind before reading the numbers:
 
-* **Every figure totals 3.0.** The mod spreads the same three points differently
-  per figure, so this list measures *where* the points sit, not how many there
-  are. Nothing here is stronger than anything else on paper — it is faster, or it
-  turns better, or it hits harder.
-* **The numbers are generated, not the disc's.** The shipped file carries real
-  values for only 48 of these 182 figures; the other 134 were empty stubs, so the
-  spreads below are the mod's own balance (see `FINDINGS.md`).
+* **Every figure totals 3.0.** The mod spreads the same three points
+  differently per figure, so this list measures *where* the points sit, not how
+  many there are. Nothing here is stronger on paper - it is faster, or it turns
+  better, or it hits harder.
+* **The spreads are deliberately spiked.** Each figure is built from an
+  archetype that maxes one stat and starves another, so a figure's weakness is as
+  visible as its strength: the roster runs from 0.05 to 1.00 with an average of 0.60,
+  123 of the 182 figures max a stat and the best and worst stats of a figure sit
+  0.75 apart on average. Only 47 figures on the whole disc have nothing below 0.30.
 * **No single "best".** A figure that tops this list loses a brawler list to
-  somebody in D tier — the weights below decide the order, and they are a choice,
+  somebody in D tier - the weights below decide the order, and they are a choice,
   not a fact.
 
 ## How the ranking is scored
@@ -27,24 +29,29 @@ decide fights, not laps. So:
 |---|---|
 | TopSpeed | 1.00 |
 | Acceleration | 0.90 |
-| Handling | 0.90 |
 | Armor | 0.35 |
+| Handling | 0.90 |
 | FirePower | 0.35 |
 
 `score = 1.00·speed + 0.90·accel + 0.90·handling + 0.35·armour + 0.35·fire`
 (max 3.5). Ties break on top speed, then acceleration, then handling. Weigh
-Armor and FirePower first instead and the order comes out completely different —
+Armor and FirePower first instead and the order comes out completely different -
 that list would be a different, equally defensible answer.
 
 ## Tiers
 
+The tiers are the roster cut into fifths by that score - 36 or 37 figures each -
+so they answer "how does this figure rank for a lap", not "is it good". The
+bottom fifth is not the worst of the mod: it is the end of the roster that spends
+its three points on armour and firepower instead of the lap.
+
 | tier | score | figures | what it means |
 |---|---|---|---|
-| **S** | 2.20+ | 8 | the ones to pick if you want to win: fast, and they can still turn |
-| **A** | 2.10–2.19 | 43 | quick enough to lead a race, no real hole in the spread |
-| **B** | 2.00–2.09 | 79 | the middle of the roster - one strong stat, one that costs you |
-| **C** | 1.94–1.99 | 34 | specialists: one thing very well, and they pay for it elsewhere |
-| **D** | under 1.94 | 18 | slow or clumsy enough that a clean lap is hard work |
+| **S** | 2.63+ | 36 | the fastest fifth: at least two of speed, acceleration and handling at the top |
+| **A** | 2.52-2.36 | 37 | quick, with no real hole in the spread |
+| **B** | 2.35-2.06 | 36 | the middle of the road |
+| **C** | 2.05-1.72 | 37 | leaning on armour and firepower, and paying for it on the lap |
+| **D** | 1.72 and below | 36 | the slowest fifth by lap score - and the ones that win a fight |
 
 ## The list
 
@@ -52,229 +59,224 @@ that list would be a different, equally defensible answer.
 
 | # | figure | speed | accel | armour | handling | fire | score | notes |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Flip Wreck | 0.90 | 0.75 | 0.50 | 0.50 | 0.35 | 2.322 | — |
-| 2 | Rocky Roll | 0.80 | 0.70 | 0.65 | 0.50 | 0.35 | 2.312 | — |
-| 3 | Shroomboom | 0.75 | 0.70 | 0.60 | 0.55 | 0.40 | 2.253 | — |
-| 4 | Small Fry | 0.85 | 0.75 | 0.40 | 0.50 | 0.50 | 2.235 | — |
-| 5 | Cynder | 0.75 | 0.55 | 0.70 | 0.55 | 0.45 | 2.225 | — |
-| 6 | Scratch | 1.00 | 0.70 | 0.25 | 0.70 | 0.35 | 2.222 | — |
-| 7 | Deja Vu | 1.00 | 0.70 | 0.25 | 0.65 | 0.40 | 2.222 | — |
-| 8 | Tree Rex | 0.80 | 0.50 | 0.65 | 0.50 | 0.55 | 2.202 | — |
-
+| 1 | Magna Charge (body) | 1.00 | 1.00 | 0.10 | 0.70 | 0.20 | 2.635 | — |
+| 2 | Countdown | 1.00 | 1.00 | 0.15 | 0.65 | 0.20 | 2.607 | — |
+| 3 | Scratch | 1.00 | 1.00 | 0.10 | 0.65 | 0.25 | 2.607 | — |
+| 4 | Voodood | 1.00 | 1.00 | 0.10 | 0.60 | 0.30 | 2.580 | sharper variant exists |
+| 5 | Knight Mare | 1.00 | 0.85 | 0.10 | 0.75 | 0.30 | 2.580 | — |
+| 6 | Blastermind | 1.00 | 1.00 | 0.15 | 0.60 | 0.25 | 2.580 | — |
+| 7 | Gearshift | 1.00 | 0.95 | 0.10 | 0.65 | 0.30 | 2.580 | — |
+| 8 | Fright Rider | 1.00 | 0.95 | 0.05 | 0.65 | 0.35 | 2.580 | — |
+| 9 | Stink Bomb (body) | 0.95 | 1.00 | 0.10 | 0.65 | 0.30 | 2.575 | — |
+| 10 | Magna Charge (legs) | 0.95 | 1.00 | 0.15 | 0.65 | 0.25 | 2.575 | — |
+| 11 | Night Shift (body) | 0.90 | 1.00 | 0.10 | 0.70 | 0.30 | 2.570 | — |
+| 12 | Roller Brawl | 0.85 | 1.00 | 0.05 | 0.75 | 0.35 | 2.565 | — |
+| 13 | Dino Rang | 1.00 | 1.00 | 0.15 | 0.55 | 0.30 | 2.553 | sharper variant exists |
+| 14 | Hex | 1.00 | 0.95 | 0.15 | 0.60 | 0.30 | 2.553 | — |
+| 15 | Boom Jet (legs) | 1.00 | 1.00 | 0.05 | 0.55 | 0.40 | 2.553 | — |
+| 16 | Weeruptor | 1.00 | 1.00 | 0.20 | 0.55 | 0.25 | 2.553 | — |
+| 17 | Driver Jet Vac | 1.00 | 1.00 | 0.10 | 0.55 | 0.35 | 2.553 | sharper variant exists |
+| 18 | Fire Kraken (body) | 1.00 | 0.95 | 0.10 | 0.60 | 0.35 | 2.553 | — |
+| 19 | Trail Blazer | 1.00 | 0.90 | 0.15 | 0.65 | 0.30 | 2.552 | — |
+| 20 | Chopper | 1.00 | 0.90 | 0.10 | 0.65 | 0.35 | 2.552 | — |
+| 21 | Driver Pop Fizz | 0.95 | 1.00 | 0.15 | 0.60 | 0.30 | 2.548 | — |
+| 22 | Hot Dog | 0.95 | 0.80 | 0.10 | 0.80 | 0.35 | 2.548 | — |
+| 23 | Deja Vu | 0.95 | 1.00 | 0.10 | 0.60 | 0.35 | 2.548 | — |
+| 24 | Freeze Blade (legs) | 0.95 | 0.85 | 0.10 | 0.75 | 0.35 | 2.548 | — |
+| 25 | Blast Zone (legs) | 0.90 | 0.95 | 0.05 | 0.70 | 0.40 | 2.542 | — |
+| 26 | Pain Yata | 0.60 | 1.00 | 0.10 | 1.00 | 0.30 | 2.540 | villain |
+| 27 | Pet Vac | 0.85 | 1.00 | 0.10 | 0.70 | 0.35 | 2.538 | — |
+| 28 | Food Fight | 0.80 | 1.00 | 0.10 | 0.75 | 0.35 | 2.533 | — |
+| 29 | Cluck | 1.00 | 1.00 | 0.20 | 0.50 | 0.30 | 2.525 | villain |
+| 30 | Lightning Rod | 1.00 | 1.00 | 0.10 | 0.50 | 0.40 | 2.525 | — |
+| 31 | Golden Queen | 1.00 | 0.95 | 0.10 | 0.55 | 0.40 | 2.525 | villain |
+| 32 | Life Bug | 1.00 | 0.60 | 0.10 | 0.90 | 0.40 | 2.525 | — |
+| 33 | Jet Vac | 1.00 | 1.00 | 0.15 | 0.50 | 0.35 | 2.525 | — |
+| 34 | Free Ranger (legs) | 1.00 | 0.95 | 0.15 | 0.55 | 0.35 | 2.525 | — |
+| 35 | Peacock | 1.00 | 0.85 | 0.15 | 0.65 | 0.35 | 2.525 | — |
+| 36 | Flashwing | 1.00 | 1.00 | 0.05 | 0.50 | 0.45 | 2.525 | — |
 ### A tier
 
 | # | figure | speed | accel | armour | handling | fire | score | notes |
 |---|---|---|---|---|---|---|---|---|
-| 9 | Trail Blazer | 1.00 | 0.60 | 0.30 | 0.75 | 0.35 | 2.195 | — |
-| 10 | Gulper | 1.00 | 0.65 | 0.25 | 0.70 | 0.40 | 2.195 | villain |
-| 11 | Knight Light | 1.00 | 0.65 | 0.25 | 0.65 | 0.45 | 2.195 | — |
-| 12 | Star Strike | 0.65 | 0.75 | 0.55 | 0.50 | 0.55 | 2.187 | — |
-| 13 | Gusto | 0.85 | 0.45 | 0.60 | 0.70 | 0.40 | 2.180 | — |
-| 14 | Lob Star | 0.75 | 0.55 | 0.60 | 0.50 | 0.60 | 2.170 | — |
-| 15 | Driver Terrafin | 1.00 | 0.60 | 0.25 | 0.80 | 0.35 | 2.168 | — |
-| 16 | Head Rush | 1.00 | 0.70 | 0.15 | 0.65 | 0.50 | 2.167 | — |
-| 17 | Krypt King | 0.65 | 0.70 | 0.55 | 0.60 | 0.50 | 2.160 | — |
-| 18 | Grim Creeper | 0.65 | 0.70 | 0.55 | 0.65 | 0.45 | 2.160 | — |
-| 19 | Flashwing | 0.65 | 0.90 | 0.35 | 0.75 | 0.35 | 2.160 | — |
-| 20 | Stink Bomb (body) | 0.90 | 0.70 | 0.25 | 0.75 | 0.40 | 2.157 | — |
-| 21 | Thumpback | 0.90 | 0.70 | 0.25 | 0.75 | 0.40 | 2.157 | — |
-| 22 | Nitro | 0.55 | 0.70 | 0.65 | 0.65 | 0.45 | 2.150 | sharper variant exists |
-| 23 | Driver Gill Grunt | 0.80 | 0.50 | 0.55 | 0.80 | 0.35 | 2.148 | — |
-| 24 | Glumchanks | 0.80 | 0.65 | 0.40 | 0.75 | 0.40 | 2.147 | villain |
-| 25 | Ignitor | 1.00 | 0.60 | 0.20 | 0.85 | 0.35 | 2.140 | — |
-| 26 | Bushwhack | 1.00 | 0.55 | 0.25 | 0.70 | 0.50 | 2.140 | — |
-| 27 | Rip Tide | 1.00 | 0.55 | 0.25 | 0.65 | 0.55 | 2.140 | — |
-| 28 | Golden Queen | 1.00 | 0.65 | 0.15 | 0.70 | 0.50 | 2.140 | villain |
-| 29 | Slam Bam | 0.70 | 0.55 | 0.60 | 0.75 | 0.40 | 2.138 | sharper variant exists |
-| 30 | Doom Stone (legs) | 0.70 | 0.75 | 0.40 | 0.70 | 0.45 | 2.137 | — |
-| 31 | Magna Charge (body) | 0.65 | 0.85 | 0.35 | 0.80 | 0.35 | 2.132 | — |
-| 32 | Dune Bug | 0.65 | 0.55 | 0.65 | 0.55 | 0.60 | 2.132 | — |
-| 33 | Night Shift (legs) | 0.60 | 0.25 | 1.00 | 0.60 | 0.55 | 2.128 | — |
-| 34 | Dino Rang | 0.60 | 0.65 | 0.60 | 0.75 | 0.40 | 2.128 | sharper variant exists |
-| 35 | Light Bulb | 0.60 | 0.65 | 0.60 | 0.70 | 0.45 | 2.128 | — |
-| 36 | Rattle Shake (body) | 0.60 | 0.65 | 0.60 | 0.70 | 0.45 | 2.128 | — |
-| 37 | Wham Shell | 0.60 | 0.65 | 0.60 | 0.65 | 0.50 | 2.128 | — |
-| 38 | Hot Head | 0.55 | 0.85 | 0.45 | 0.75 | 0.40 | 2.123 | — |
-| 39 | Stealth Elf | 0.55 | 0.30 | 1.00 | 0.40 | 0.75 | 2.123 | sharper variant exists |
-| 40 | Trap Shadow (body) | 0.55 | 0.30 | 1.00 | 0.35 | 0.80 | 2.123 | — |
-| 41 | Stump Smash | 0.50 | 0.75 | 0.60 | 0.50 | 0.65 | 2.118 | — |
-| 42 | Wolfgang | 0.50 | 0.35 | 1.00 | 0.30 | 0.85 | 2.118 | villain |
-| 43 | Fright Rider | 1.00 | 0.60 | 0.15 | 0.80 | 0.45 | 2.113 | — |
-| 44 | Knight Mare | 1.00 | 0.55 | 0.20 | 0.90 | 0.35 | 2.113 | — |
-| 45 | Fire Kraken (body) | 1.00 | 0.45 | 0.30 | 0.75 | 0.50 | 2.112 | — |
-| 46 | Weeruptor | 0.40 | 0.90 | 0.55 | 0.80 | 0.35 | 2.107 | — |
-| 47 | Camo | 0.65 | 0.60 | 0.55 | 0.35 | 0.85 | 2.105 | — |
-| 48 | Blastermind | 0.65 | 0.75 | 0.40 | 0.85 | 0.35 | 2.105 | — |
-| 49 | Pain Yata | 0.60 | 0.40 | 0.80 | 0.60 | 0.60 | 2.100 | villain |
-| 50 | Chompy Mage | 0.60 | 0.80 | 0.40 | 0.90 | 0.30 | 2.100 | villain |
-| 51 | Blackout | 0.60 | 0.75 | 0.45 | 0.55 | 0.65 | 2.100 | — |
-
+| 37 | Chompy Mage | 1.00 | 0.85 | 0.05 | 0.65 | 0.45 | 2.525 | villain |
+| 38 | Driver Trigger Happy | 0.95 | 1.00 | 0.10 | 0.55 | 0.40 | 2.520 | — |
+| 39 | Hoot Loop (body) | 0.95 | 1.00 | 0.15 | 0.55 | 0.35 | 2.520 | — |
+| 40 | Spy Rise (body) | 0.95 | 0.55 | 0.05 | 1.00 | 0.45 | 2.520 | — |
+| 41 | Ka Boom | 0.90 | 1.00 | 0.15 | 0.60 | 0.35 | 2.515 | — |
+| 42 | Bop | 0.85 | 0.75 | 0.10 | 0.90 | 0.40 | 2.510 | — |
+| 43 | Double Trouble | 0.55 | 1.00 | 0.15 | 1.00 | 0.30 | 2.508 | — |
+| 44 | Chop Chop | 1.00 | 0.85 | 0.15 | 0.60 | 0.40 | 2.498 | sharper variant exists |
+| 45 | Sunburn | 1.00 | 1.00 | 0.15 | 0.45 | 0.40 | 2.497 | — |
+| 46 | Drill Sergeant | 1.00 | 0.95 | 0.15 | 0.50 | 0.40 | 2.497 | — |
+| 47 | Bumble Blast | 1.00 | 1.00 | 0.20 | 0.45 | 0.35 | 2.497 | — |
+| 48 | Tread Head | 1.00 | 1.00 | 0.10 | 0.45 | 0.45 | 2.497 | — |
+| 49 | Bash | 0.95 | 1.00 | 0.15 | 0.50 | 0.40 | 2.492 | — |
+| 50 | Warnado | 0.95 | 0.70 | 0.15 | 0.80 | 0.40 | 2.492 | — |
+| 51 | Torch | 0.95 | 1.00 | 0.20 | 0.50 | 0.35 | 2.492 | — |
+| 52 | Swarm | 0.50 | 1.00 | 0.10 | 1.00 | 0.40 | 2.475 | — |
+| 53 | Bowser | 0.50 | 1.00 | 0.15 | 1.00 | 0.35 | 2.475 | sharper variant exists |
+| 54 | Echo | 0.50 | 1.00 | 0.05 | 1.00 | 0.45 | 2.475 | — |
+| 55 | Ink Girl | 1.00 | 0.40 | 0.10 | 1.00 | 0.50 | 2.470 | — |
+| 56 | Thunderbolt | 1.00 | 0.95 | 0.20 | 0.45 | 0.40 | 2.470 | — |
+| 57 | Cobra Cadabra | 1.00 | 0.95 | 0.15 | 0.45 | 0.45 | 2.470 | — |
+| 58 | Freeze Blade (body) | 0.95 | 1.00 | 0.15 | 0.45 | 0.45 | 2.465 | — |
+| 59 | Pop Thorn | 0.90 | 0.95 | 0.15 | 0.55 | 0.45 | 2.460 | — |
+| 60 | Night Shift (legs) | 0.55 | 0.90 | 0.20 | 1.00 | 0.35 | 2.452 | — |
+| 61 | Grilla Drilla (body) | 0.80 | 0.60 | 0.10 | 1.00 | 0.50 | 2.450 | — |
+| 62 | Spyro | 0.50 | 0.95 | 0.15 | 1.00 | 0.40 | 2.447 | sharper variant exists |
+| 63 | Wash Buckler (body) | 0.95 | 0.40 | 0.05 | 1.00 | 0.60 | 2.438 | — |
+| 64 | Snap Shot | 0.45 | 0.95 | 0.15 | 1.00 | 0.45 | 2.415 | — |
+| 65 | Gill Grunt | 0.40 | 1.00 | 0.15 | 1.00 | 0.45 | 2.410 | sharper variant exists |
+| 66 | Enigma | 0.90 | 0.40 | 0.10 | 1.00 | 0.60 | 2.405 | — |
+| 67 | Trap Shadow (body) | 0.55 | 1.00 | 0.15 | 0.80 | 0.50 | 2.398 | — |
+| 68 | Rubble Rouser (body) | 0.80 | 0.50 | 0.10 | 1.00 | 0.60 | 2.395 | — |
+| 69 | Eye Brawl | 0.50 | 1.00 | 0.15 | 0.85 | 0.50 | 2.393 | — |
+| 70 | Prism Break | 0.35 | 1.00 | 0.15 | 1.00 | 0.50 | 2.377 | — |
+| 71 | Gill Runt | 0.85 | 0.40 | 0.05 | 1.00 | 0.70 | 2.373 | — |
+| 72 | Air Lock | 0.85 | 0.70 | 0.30 | 0.70 | 0.45 | 2.373 | — |
+| 73 | Rattle Shake (legs) | 0.75 | 0.55 | 0.10 | 0.95 | 0.65 | 2.362 | — |
 ### B tier
 
 | # | figure | speed | accel | armour | handling | fire | score | notes |
 |---|---|---|---|---|---|---|---|---|
-| 52 | Crusher | 0.55 | 0.25 | 1.00 | 0.60 | 0.60 | 2.095 | — |
-| 53 | Doom Stone (body) | 0.55 | 0.75 | 0.50 | 0.70 | 0.50 | 2.095 | — |
-| 54 | Night Shift (body) | 0.80 | 0.80 | 0.15 | 0.85 | 0.40 | 2.093 | — |
-| 55 | Sprocket | 0.80 | 0.70 | 0.25 | 0.85 | 0.40 | 2.093 | — |
-| 56 | Pet Vac | 0.80 | 0.70 | 0.25 | 0.80 | 0.45 | 2.093 | — |
-| 57 | Spyro | 0.50 | 0.30 | 1.00 | 0.55 | 0.65 | 2.090 | sharper variant exists |
-| 58 | Fist Bump | 0.50 | 0.30 | 1.00 | 0.45 | 0.75 | 2.090 | — |
-| 59 | Trap Shadow (legs) | 0.75 | 0.75 | 0.25 | 0.80 | 0.45 | 2.087 | — |
-| 60 | Freeze Blade (legs) | 1.00 | 0.55 | 0.15 | 0.85 | 0.45 | 2.085 | — |
-| 61 | Hoot Loop (legs) | 1.00 | 0.60 | 0.10 | 0.90 | 0.40 | 2.085 | — |
-| 62 | Whisper Elf | 1.00 | 0.55 | 0.15 | 0.90 | 0.40 | 2.085 | — |
-| 63 | Tuff Luck | 1.00 | 0.50 | 0.20 | 0.95 | 0.35 | 2.085 | — |
-| 64 | Double Trouble | 0.45 | 0.35 | 1.00 | 0.65 | 0.55 | 2.085 | — |
-| 65 | Air Lock | 0.70 | 0.70 | 0.35 | 0.85 | 0.40 | 2.082 | — |
-| 66 | Smolderdash | 0.70 | 0.40 | 0.65 | 0.75 | 0.50 | 2.082 | — |
-| 67 | Donkey Kong | 0.40 | 0.80 | 0.60 | 0.75 | 0.45 | 2.080 | sharper variant exists |
-| 68 | Jaw Breaker | 0.95 | 0.60 | 0.15 | 0.95 | 0.35 | 2.080 | — |
-| 69 | Wrecking Ball | 0.40 | 0.40 | 1.00 | 0.45 | 0.75 | 2.080 | — |
-| 70 | Hijinx | 0.60 | 0.55 | 0.60 | 0.25 | 1.00 | 2.073 | — |
-| 71 | Fling Kong | 0.60 | 0.35 | 0.80 | 0.40 | 0.85 | 2.073 | — |
-| 72 | Ninjini | 0.85 | 0.70 | 0.15 | 0.65 | 0.65 | 2.070 | — |
-| 73 | Echo | 0.55 | 0.35 | 0.85 | 0.50 | 0.75 | 2.068 | — |
-| 74 | High Five | 0.50 | 0.25 | 1.00 | 0.40 | 0.85 | 2.063 | — |
-| 75 | Rubble Rouser (legs) | 0.50 | 0.80 | 0.45 | 0.80 | 0.45 | 2.062 | — |
-| 76 | Bowser | 0.50 | 0.25 | 1.00 | 0.70 | 0.55 | 2.062 | sharper variant exists |
-| 77 | Whirlwind | 0.50 | 0.25 | 1.00 | 0.50 | 0.75 | 2.062 | sharper variant exists |
-| 78 | Snap Shot | 0.50 | 0.25 | 1.00 | 0.45 | 0.80 | 2.062 | — |
-| 79 | Eye Brawl | 0.50 | 0.35 | 0.90 | 0.40 | 0.85 | 2.062 | — |
-| 80 | Terrabite | 0.75 | 0.60 | 0.35 | 0.70 | 0.60 | 2.060 | — |
-| 81 | Spy Rise (body) | 0.70 | 0.60 | 0.40 | 0.50 | 0.80 | 2.055 | — |
-| 82 | Flameslinger | 0.40 | 0.85 | 0.50 | 0.75 | 0.50 | 2.053 | — |
-| 83 | Rubble Rouser (body) | 0.40 | 0.85 | 0.50 | 0.70 | 0.55 | 2.053 | — |
-| 84 | Greeble | 0.65 | 0.60 | 0.45 | 0.45 | 0.85 | 2.050 | villain |
-| 85 | Dr Krankcase | 0.65 | 0.55 | 0.50 | 0.30 | 1.00 | 2.050 | villain |
-| 86 | Voodood | 0.65 | 0.75 | 0.30 | 0.95 | 0.35 | 2.050 | sharper variant exists |
-| 87 | Driver Roller Brawl | 0.65 | 0.60 | 0.45 | 0.65 | 0.65 | 2.050 | sharper variant exists |
-| 88 | Bat Spin | 0.65 | 0.65 | 0.40 | 0.65 | 0.65 | 2.050 | — |
-| 89 | Blast Zone (legs) | 0.90 | 0.60 | 0.15 | 0.80 | 0.55 | 2.048 | — |
-| 90 | Fryno | 0.90 | 0.60 | 0.15 | 0.95 | 0.40 | 2.048 | — |
-| 91 | Drobit | 0.60 | 0.65 | 0.45 | 1.00 | 0.30 | 2.045 | — |
-| 92 | Scorp | 0.55 | 0.50 | 0.65 | 0.30 | 1.00 | 2.040 | — |
-| 93 | Roller Brawl | 0.80 | 0.65 | 0.20 | 0.85 | 0.50 | 2.038 | — |
-| 94 | Punk Shock | 0.50 | 0.20 | 1.00 | 0.40 | 0.90 | 2.035 | — |
-| 95 | Wallop | 0.50 | 0.75 | 0.45 | 0.80 | 0.50 | 2.035 | — |
-| 96 | Blast Zone (body) | 0.50 | 0.75 | 0.45 | 0.70 | 0.60 | 2.035 | — |
-| 97 | Blades | 0.50 | 0.65 | 0.55 | 0.80 | 0.50 | 2.035 | — |
-| 98 | Wildfire | 0.50 | 0.65 | 0.55 | 0.65 | 0.65 | 2.035 | — |
-| 99 | Grilla Drilla (legs) | 0.45 | 0.55 | 0.70 | 0.75 | 0.55 | 2.030 | — |
-| 100 | Eruptor | 0.45 | 0.30 | 0.95 | 0.40 | 0.90 | 2.030 | sharper variant exists |
-| 101 | Thumpling | 0.45 | 0.25 | 1.00 | 0.40 | 0.90 | 2.030 | — |
-| 102 | Enigma | 0.70 | 0.35 | 0.60 | 0.45 | 0.90 | 2.027 | — |
-| 103 | Short Cut | 0.70 | 0.50 | 0.45 | 0.35 | 1.00 | 2.027 | — |
-| 104 | Driver Eruptor | 0.70 | 0.45 | 0.50 | 0.35 | 1.00 | 2.027 | — |
-| 105 | Eye Small | 0.40 | 0.70 | 0.60 | 0.75 | 0.55 | 2.025 | — |
-| 106 | Slobber Tooth | 0.40 | 0.95 | 0.35 | 1.00 | 0.30 | 2.025 | — |
-| 107 | Pop Fizz | 0.95 | 0.45 | 0.20 | 0.85 | 0.55 | 2.025 | — |
-| 108 | Zoo Lou | 0.65 | 0.70 | 0.30 | 0.95 | 0.40 | 2.022 | — |
-| 109 | Terrafin | 0.65 | 0.55 | 0.45 | 0.35 | 1.00 | 2.022 | sharper variant exists |
-| 110 | Fire Kraken (legs) | 0.65 | 0.50 | 0.50 | 0.35 | 1.00 | 2.022 | — |
-| 111 | Warnado | 0.90 | 0.45 | 0.25 | 0.90 | 0.50 | 2.020 | — |
-| 112 | Thunderbolt | 0.60 | 0.50 | 0.55 | 0.85 | 0.50 | 2.018 | — |
-| 113 | Boomer | 0.60 | 0.50 | 0.55 | 0.35 | 1.00 | 2.018 | sharper variant exists |
-| 114 | Sonic Boom | 0.60 | 0.25 | 0.80 | 0.45 | 0.90 | 2.018 | — |
-| 115 | Life Bug | 0.60 | 0.70 | 0.35 | 0.80 | 0.55 | 2.018 | — |
-| 116 | Hot Dog | 0.60 | 0.65 | 0.40 | 0.80 | 0.55 | 2.018 | — |
-| 117 | Breeze | 0.60 | 0.70 | 0.35 | 1.00 | 0.35 | 2.018 | — |
-| 118 | Soul Jam | 0.85 | 0.55 | 0.20 | 0.80 | 0.60 | 2.015 | — |
-| 119 | Spry | 0.55 | 0.50 | 0.60 | 0.70 | 0.65 | 2.013 | — |
-| 120 | Drill Sergeant | 0.55 | 0.75 | 0.35 | 0.85 | 0.50 | 2.013 | — |
-| 121 | Driver Pop Fizz | 0.55 | 0.75 | 0.35 | 0.95 | 0.40 | 2.013 | — |
-| 122 | Kaos | 0.55 | 0.65 | 0.45 | 0.35 | 1.00 | 2.012 | villain |
-| 123 | Countdown | 0.50 | 0.60 | 0.55 | 1.00 | 0.35 | 2.008 | — |
-| 124 | Funny Bone | 0.50 | 0.70 | 0.45 | 1.00 | 0.35 | 2.007 | — |
-| 125 | Hex | 0.75 | 0.55 | 0.30 | 1.00 | 0.40 | 2.005 | — |
-| 126 | Spotlight | 0.75 | 0.45 | 0.40 | 0.50 | 0.90 | 2.005 | — |
-| 127 | Food Fight | 0.75 | 0.65 | 0.20 | 0.95 | 0.45 | 2.005 | — |
-| 128 | Gill Grunt | 0.45 | 0.30 | 0.90 | 0.60 | 0.75 | 2.002 | sharper variant exists |
-| 129 | Wind Up | 0.45 | 0.25 | 0.95 | 0.40 | 0.95 | 2.002 | — |
-| 130 | Boom Jet (legs) | 0.70 | 0.60 | 0.30 | 0.85 | 0.55 | 2.000 | — |
-
+| 74 | Flip Wreck | 0.95 | 0.75 | 0.40 | 0.50 | 0.40 | 2.355 | — |
+| 75 | Glumchanks | 0.90 | 0.65 | 0.35 | 0.65 | 0.45 | 2.350 | villain |
+| 76 | Short Cut | 0.85 | 0.50 | 0.10 | 0.85 | 0.70 | 2.345 | — |
+| 77 | Zap | 0.80 | 0.40 | 0.10 | 1.00 | 0.70 | 2.340 | — |
+| 78 | Doom Stone (legs) | 0.80 | 0.75 | 0.30 | 0.65 | 0.50 | 2.340 | — |
+| 79 | Terrafin | 0.80 | 0.50 | 0.10 | 0.90 | 0.70 | 2.340 | sharper variant exists |
+| 80 | Thumpling | 0.45 | 0.95 | 0.20 | 0.85 | 0.55 | 2.333 | — |
+| 81 | Driver Gill Grunt | 0.90 | 0.50 | 0.45 | 0.75 | 0.40 | 2.322 | — |
+| 82 | Fire Kraken (legs) | 0.80 | 0.50 | 0.10 | 0.85 | 0.75 | 2.313 | — |
+| 83 | Boomer | 0.75 | 0.55 | 0.10 | 0.85 | 0.75 | 2.308 | sharper variant exists |
+| 84 | Astro Blast | 0.70 | 0.45 | 0.10 | 1.00 | 0.75 | 2.302 | sharper variant exists |
+| 85 | Rocky Roll | 0.95 | 0.70 | 0.50 | 0.45 | 0.40 | 2.300 | — |
+| 86 | Shroomboom | 0.95 | 0.65 | 0.45 | 0.50 | 0.45 | 2.300 | — |
+| 87 | Hot Head | 0.65 | 0.80 | 0.40 | 0.70 | 0.45 | 2.297 | — |
+| 88 | Grim Creeper | 0.80 | 0.70 | 0.40 | 0.60 | 0.50 | 2.285 | — |
+| 89 | Gusto | 0.90 | 0.50 | 0.50 | 0.65 | 0.45 | 2.267 | — |
+| 90 | Wallop | 0.60 | 0.75 | 0.40 | 0.70 | 0.55 | 2.238 | — |
+| 91 | Flameslinger | 0.55 | 0.80 | 0.40 | 0.70 | 0.55 | 2.233 | — |
+| 92 | Driver Roller Brawl | 0.80 | 0.60 | 0.35 | 0.60 | 0.65 | 2.230 | sharper variant exists |
+| 93 | Krypt King | 0.75 | 0.70 | 0.45 | 0.55 | 0.55 | 2.225 | — |
+| 94 | Bat Spin | 0.75 | 0.65 | 0.30 | 0.60 | 0.70 | 2.225 | — |
+| 95 | Light Bulb | 0.70 | 0.65 | 0.50 | 0.65 | 0.50 | 2.220 | — |
+| 96 | Wham Shell | 0.70 | 0.65 | 0.45 | 0.65 | 0.55 | 2.220 | — |
+| 97 | Zook | 0.65 | 0.35 | 0.05 | 1.00 | 0.95 | 2.215 | sharper variant exists |
+| 98 | Blades | 0.60 | 0.65 | 0.45 | 0.75 | 0.55 | 2.210 | — |
+| 99 | Donkey Kong | 0.55 | 0.75 | 0.50 | 0.70 | 0.50 | 2.205 | sharper variant exists |
+| 100 | Driver Stealth Elf | 0.80 | 0.55 | 0.40 | 0.60 | 0.65 | 2.203 | sharper variant exists |
+| 101 | Star Strike | 0.75 | 0.70 | 0.45 | 0.50 | 0.60 | 2.197 | — |
+| 102 | Blast Zone (body) | 0.60 | 0.70 | 0.40 | 0.65 | 0.65 | 2.182 | — |
+| 103 | Slobber Tooth | 0.50 | 0.75 | 0.55 | 0.70 | 0.50 | 2.172 | — |
+| 104 | Tree Rex | 0.90 | 0.45 | 0.55 | 0.50 | 0.60 | 2.157 | — |
+| 105 | Lob Star | 0.80 | 0.55 | 0.50 | 0.50 | 0.65 | 2.148 | — |
+| 106 | Trigger Happy | 0.95 | 0.30 | 0.30 | 0.45 | 1.00 | 2.080 | sharper variant exists |
+| 107 | Spry | 0.65 | 0.50 | 0.50 | 0.60 | 0.75 | 2.077 | — |
+| 108 | Spotlight | 0.85 | 0.30 | 0.40 | 0.55 | 0.90 | 2.070 | — |
+| 109 | Greeble | 0.75 | 0.40 | 0.45 | 0.55 | 0.85 | 2.060 | villain |
 ### C tier
 
 | # | figure | speed | accel | armour | handling | fire | score | notes |
 |---|---|---|---|---|---|---|---|---|
-| 131 | Gearshift | 0.65 | 0.65 | 0.30 | 1.00 | 0.40 | 1.995 | — |
-| 132 | Rattle Shake (legs) | 0.65 | 0.50 | 0.45 | 0.40 | 1.00 | 1.995 | — |
-| 133 | Bouncer | 0.65 | 0.45 | 0.50 | 1.00 | 0.40 | 1.995 | — |
-| 134 | Drobot | 0.60 | 0.50 | 0.50 | 0.50 | 0.90 | 1.990 | — |
-| 135 | Grilla Drilla (body) | 0.55 | 0.60 | 0.45 | 0.55 | 0.85 | 1.985 | — |
-| 136 | Free Ranger (body) | 0.55 | 0.55 | 0.50 | 1.00 | 0.40 | 1.985 | — |
-| 137 | Chill | 0.50 | 0.35 | 0.75 | 0.55 | 0.85 | 1.980 | — |
-| 138 | Bumble Blast | 0.45 | 0.75 | 0.40 | 0.90 | 0.50 | 1.975 | — |
-| 139 | Pop Thorn | 0.45 | 0.65 | 0.50 | 1.00 | 0.40 | 1.975 | — |
-| 140 | Barkley | 0.45 | 0.45 | 0.70 | 0.40 | 1.00 | 1.975 | — |
-| 141 | Trigger Happy | 0.70 | 0.55 | 0.30 | 0.45 | 1.00 | 1.973 | sharper variant exists |
-| 142 | Sunburn | 0.40 | 0.85 | 0.35 | 0.90 | 0.50 | 1.970 | — |
-| 143 | Jet Vac | 0.65 | 0.50 | 0.40 | 0.95 | 0.50 | 1.967 | — |
-| 144 | Wash Buckler (body) | 0.65 | 0.40 | 0.50 | 0.45 | 1.00 | 1.967 | — |
-| 145 | Swarm | 0.35 | 0.75 | 0.50 | 1.00 | 0.40 | 1.965 | — |
-| 146 | Koala | 0.60 | 0.55 | 0.40 | 0.55 | 0.90 | 1.963 | — |
-| 147 | Stink Bomb (legs) | 0.60 | 0.40 | 0.55 | 0.45 | 1.00 | 1.963 | — |
-| 148 | Prism Break | 0.30 | 0.30 | 1.00 | 0.55 | 0.85 | 1.960 | — |
-| 149 | Free Ranger (legs) | 0.55 | 0.60 | 0.40 | 1.00 | 0.45 | 1.958 | — |
-| 150 | Chopper | 0.55 | 0.55 | 0.45 | 1.00 | 0.45 | 1.958 | — |
-| 151 | Peacock | 0.55 | 0.55 | 0.45 | 1.00 | 0.45 | 1.958 | — |
-| 152 | Astro Blast | 0.55 | 0.45 | 0.55 | 0.45 | 1.00 | 1.958 | sharper variant exists |
-| 153 | Boom Jet (body) | 0.80 | 0.55 | 0.15 | 1.00 | 0.50 | 1.955 | — |
-| 154 | Nightfall | 0.50 | 0.55 | 0.50 | 0.45 | 1.00 | 1.953 | — |
-| 155 | Count Money Bone | 0.50 | 0.40 | 0.65 | 0.45 | 1.00 | 1.952 | villain |
-| 156 | Gill Runt | 0.50 | 0.35 | 0.70 | 0.45 | 1.00 | 1.952 | — |
-| 157 | Tread Head | 0.45 | 0.80 | 0.30 | 0.90 | 0.55 | 1.948 | — |
-| 158 | Cluck | 0.45 | 0.75 | 0.35 | 1.00 | 0.45 | 1.947 | villain |
-| 159 | Hoot Loop (body) | 0.45 | 0.75 | 0.35 | 1.00 | 0.45 | 1.947 | — |
-| 160 | Spy Rise (legs) | 0.45 | 0.65 | 0.45 | 0.45 | 1.00 | 1.947 | — |
-| 161 | Mesmeralda | 0.40 | 0.40 | 0.75 | 0.50 | 0.95 | 1.943 | villain |
-| 162 | Ka Boom | 0.40 | 0.70 | 0.45 | 1.00 | 0.45 | 1.942 | — |
-| 163 | Torch | 0.40 | 0.70 | 0.45 | 1.00 | 0.45 | 1.942 | — |
-| 164 | Bash | 0.40 | 0.70 | 0.45 | 0.95 | 0.50 | 1.942 | — |
-
+| 110 | Koala | 0.70 | 0.35 | 0.40 | 0.65 | 0.90 | 2.055 | — |
+| 111 | Ghost Roaster | 0.85 | 0.20 | 0.35 | 0.60 | 1.00 | 2.043 | sharper variant exists |
+| 112 | Drobot | 0.75 | 0.30 | 0.45 | 0.60 | 0.90 | 2.033 | — |
+| 113 | Chef Pepper Jack | 0.75 | 0.25 | 0.35 | 0.65 | 1.00 | 2.032 | villain |
+| 114 | Kaos | 0.80 | 0.40 | 0.40 | 0.40 | 1.00 | 2.010 | villain |
+| 115 | Driver Eruptor | 0.95 | 0.25 | 0.45 | 0.35 | 1.00 | 1.997 | — |
+| 116 | Zoo Lou | 0.65 | 0.35 | 0.50 | 0.60 | 0.90 | 1.995 | — |
+| 117 | Trigger Snappy | 0.65 | 0.25 | 0.45 | 0.70 | 0.95 | 1.995 | — |
+| 118 | Camo | 0.75 | 0.35 | 0.55 | 0.45 | 0.90 | 1.977 | — |
+| 119 | Nightfall | 0.65 | 0.35 | 0.45 | 0.55 | 1.00 | 1.967 | — |
+| 120 | Spy Rise (legs) | 0.60 | 0.40 | 0.45 | 0.55 | 1.00 | 1.963 | — |
+| 121 | Dr Krankcase | 0.80 | 0.30 | 0.50 | 0.40 | 1.00 | 1.955 | villain |
+| 122 | Stink Bomb (legs) | 0.75 | 0.25 | 0.50 | 0.50 | 1.00 | 1.950 | — |
+| 123 | Chill | 0.65 | 0.25 | 0.65 | 0.60 | 0.85 | 1.940 | — |
+| 124 | Hijinx | 0.75 | 0.35 | 0.60 | 0.35 | 0.95 | 1.922 | — |
+| 125 | Hoot Loop (legs) | 0.20 | 0.40 | 0.70 | 0.90 | 0.80 | 1.895 | — |
+| 126 | Scorp | 0.70 | 0.30 | 0.60 | 0.40 | 1.00 | 1.890 | — |
+| 127 | Count Money Bone | 0.65 | 0.25 | 0.60 | 0.50 | 1.00 | 1.885 | villain |
+| 128 | Jaw Breaker | 0.15 | 0.40 | 0.90 | 0.90 | 0.65 | 1.862 | — |
+| 129 | Whisper Elf | 0.20 | 0.35 | 0.80 | 0.85 | 0.80 | 1.840 | — |
+| 130 | Small Fry | 0.50 | 0.55 | 0.70 | 0.25 | 1.00 | 1.815 | — |
+| 131 | Funny Bone | 0.50 | 0.55 | 0.90 | 0.25 | 0.80 | 1.815 | — |
+| 132 | Gulper | 0.20 | 0.40 | 1.00 | 0.75 | 0.65 | 1.812 | villain |
+| 133 | Driver Terrafin | 0.15 | 0.35 | 1.00 | 0.85 | 0.65 | 1.808 | — |
+| 134 | Sprocket | 0.10 | 0.40 | 1.00 | 0.85 | 0.65 | 1.803 | — |
+| 135 | Fryno | 0.10 | 0.40 | 0.90 | 0.85 | 0.75 | 1.803 | — |
+| 136 | Barkley | 0.55 | 0.25 | 0.75 | 0.45 | 1.00 | 1.793 | — |
+| 137 | Ignitor | 0.15 | 0.40 | 1.00 | 0.75 | 0.70 | 1.780 | — |
+| 138 | Tuff Luck | 0.10 | 0.35 | 1.00 | 0.85 | 0.70 | 1.775 | — |
+| 139 | Boom Jet (body) | 0.10 | 0.30 | 0.85 | 0.90 | 0.85 | 1.775 | — |
+| 140 | Rubble Rouser (legs) | 0.30 | 0.55 | 0.80 | 0.40 | 0.95 | 1.768 | — |
+| 141 | Terrabite | 0.45 | 0.45 | 0.80 | 0.30 | 1.00 | 1.755 | — |
+| 142 | Slam Bam | 0.45 | 0.40 | 0.95 | 0.35 | 0.85 | 1.755 | sharper variant exists |
+| 143 | Doom Stone (body) | 0.30 | 0.55 | 0.80 | 0.35 | 1.00 | 1.740 | — |
+| 144 | Bouncer | 0.30 | 0.25 | 1.00 | 0.65 | 0.80 | 1.740 | — |
+| 145 | Drobit | 0.25 | 0.20 | 0.80 | 0.75 | 1.00 | 1.735 | — |
+| 146 | Head Rush | 0.15 | 0.45 | 0.90 | 0.60 | 0.90 | 1.725 | — |
 ### D tier
 
 | # | figure | speed | accel | armour | handling | fire | score | notes |
 |---|---|---|---|---|---|---|---|---|
-| 165 | Driver Jet Vac | 0.60 | 0.55 | 0.35 | 0.90 | 0.60 | 1.935 | sharper variant exists |
-| 166 | Bop | 0.85 | 0.45 | 0.15 | 1.00 | 0.55 | 1.933 | — |
-| 167 | Captain Frightbeard | 0.80 | 0.45 | 0.20 | 1.00 | 0.55 | 1.928 | villain |
-| 168 | Zap | 0.45 | 0.55 | 0.50 | 1.00 | 0.50 | 1.920 | — |
-| 169 | Freeze Blade (body) | 0.45 | 0.70 | 0.35 | 0.90 | 0.60 | 1.920 | — |
-| 170 | Ghost Roaster | 0.70 | 0.35 | 0.40 | 0.55 | 1.00 | 1.917 | sharper variant exists |
-| 171 | Driver Trigger Happy | 0.40 | 0.75 | 0.35 | 1.00 | 0.50 | 1.915 | — |
-| 172 | Chef Pepper Jack | 0.65 | 0.40 | 0.40 | 0.55 | 1.00 | 1.912 | villain |
-| 173 | Chop Chop | 0.50 | 0.55 | 0.40 | 1.00 | 0.55 | 1.898 | sharper variant exists |
-| 174 | Cobra Cadabra | 0.50 | 0.60 | 0.35 | 0.90 | 0.65 | 1.897 | — |
-| 175 | Magna Charge (legs) | 0.45 | 0.65 | 0.35 | 1.00 | 0.55 | 1.892 | — |
-| 176 | Wash Buckler (legs) | 0.45 | 0.65 | 0.35 | 1.00 | 0.55 | 1.892 | — |
-| 177 | Driver Stealth Elf | 0.65 | 0.40 | 0.35 | 1.00 | 0.60 | 1.885 | sharper variant exists |
-| 178 | Lightning Rod | 0.60 | 0.50 | 0.30 | 1.00 | 0.60 | 1.880 | — |
-| 179 | Zook | 0.60 | 0.40 | 0.40 | 0.60 | 1.00 | 1.880 | sharper variant exists |
-| 180 | Ink Girl | 0.50 | 0.40 | 0.50 | 0.70 | 0.90 | 1.870 | — |
-| 181 | Trigger Snappy | 0.50 | 0.45 | 0.45 | 0.60 | 1.00 | 1.870 | — |
-| 182 | Mini Jini | 0.40 | 0.30 | 0.70 | 0.60 | 1.00 | 1.860 | — |
+| 147 | Rattle Shake (body) | 0.40 | 0.45 | 0.90 | 0.30 | 0.95 | 1.722 | — |
+| 148 | Trap Shadow (legs) | 0.10 | 0.40 | 1.00 | 0.70 | 0.80 | 1.720 | — |
+| 149 | Nitro | 0.35 | 0.50 | 0.95 | 0.30 | 0.90 | 1.717 | sharper variant exists |
+| 150 | Cynder | 0.45 | 0.40 | 1.00 | 0.25 | 0.90 | 1.700 | — |
+| 151 | Thumpback | 0.15 | 0.40 | 1.00 | 0.60 | 0.85 | 1.698 | — |
+| 152 | Captain Frightbeard | 0.10 | 0.25 | 1.00 | 0.80 | 0.85 | 1.693 | villain |
+| 153 | Ninjini | 0.10 | 0.45 | 0.85 | 0.60 | 1.00 | 1.693 | — |
+| 154 | Wash Buckler (legs) | 0.30 | 0.20 | 0.95 | 0.60 | 0.95 | 1.685 | — |
+| 155 | Knight Light | 0.20 | 0.35 | 1.00 | 0.55 | 0.90 | 1.675 | — |
+| 156 | Bushwhack | 0.15 | 0.35 | 1.00 | 0.60 | 0.90 | 1.670 | — |
+| 157 | Pop Fizz | 0.15 | 0.25 | 0.90 | 0.70 | 1.00 | 1.670 | — |
+| 158 | Smolderdash | 0.40 | 0.30 | 0.95 | 0.35 | 1.00 | 1.668 | — |
+| 159 | Blackout | 0.35 | 0.45 | 0.95 | 0.25 | 1.00 | 1.662 | — |
+| 160 | Crusher | 0.30 | 0.15 | 1.00 | 0.60 | 0.95 | 1.658 | — |
+| 161 | Wind Up | 0.30 | 0.15 | 0.95 | 0.60 | 1.00 | 1.658 | — |
+| 162 | Wildfire | 0.30 | 0.45 | 0.95 | 0.30 | 1.00 | 1.658 | — |
+| 163 | Punk Shock | 0.25 | 0.20 | 0.95 | 0.60 | 1.00 | 1.653 | — |
+| 164 | Eye Small | 0.25 | 0.50 | 0.95 | 0.30 | 1.00 | 1.653 | — |
+| 165 | High Five | 0.25 | 0.15 | 0.95 | 0.65 | 1.00 | 1.652 | — |
+| 166 | Rip Tide | 0.15 | 0.35 | 1.00 | 0.55 | 0.95 | 1.643 | — |
+| 167 | Dune Bug | 0.40 | 0.35 | 1.00 | 0.25 | 1.00 | 1.640 | — |
+| 168 | Soul Jam | 0.10 | 0.30 | 1.00 | 0.65 | 0.95 | 1.637 | — |
+| 169 | Stealth Elf | 0.35 | 0.15 | 1.00 | 0.50 | 1.00 | 1.635 | sharper variant exists |
+| 170 | Sonic Boom | 0.30 | 0.15 | 1.00 | 0.55 | 1.00 | 1.630 | — |
+| 171 | Stump Smash | 0.30 | 0.50 | 1.00 | 0.20 | 1.00 | 1.630 | — |
+| 172 | Wolfgang | 0.30 | 0.20 | 1.00 | 0.50 | 1.00 | 1.630 | villain |
+| 173 | Fling Kong | 0.30 | 0.25 | 1.00 | 0.45 | 1.00 | 1.630 | — |
+| 174 | Whirlwind | 0.25 | 0.15 | 1.00 | 0.60 | 1.00 | 1.625 | sharper variant exists |
+| 175 | Fist Bump | 0.25 | 0.20 | 1.00 | 0.55 | 1.00 | 1.625 | — |
+| 176 | Grilla Drilla (legs) | 0.25 | 0.40 | 1.00 | 0.35 | 1.00 | 1.625 | — |
+| 177 | Wrecking Ball | 0.25 | 0.25 | 1.00 | 0.50 | 1.00 | 1.625 | — |
+| 178 | Free Ranger (body) | 0.25 | 0.10 | 1.00 | 0.65 | 1.00 | 1.625 | — |
+| 179 | Eruptor | 0.20 | 0.20 | 1.00 | 0.60 | 1.00 | 1.620 | sharper variant exists |
+| 180 | Mesmeralda | 0.20 | 0.25 | 1.00 | 0.55 | 1.00 | 1.620 | villain |
+| 181 | Breeze | 0.20 | 0.15 | 1.00 | 0.65 | 1.00 | 1.620 | — |
+| 182 | Mini Jini | 0.15 | 0.20 | 1.00 | 0.65 | 1.00 | 1.615 | — |
 
 ## Extremes
 
 | stat | max | figures at max | best of them (by score) |
 |---|---|---|---|
-| TopSpeed | 1.00 | 18 | Deja Vu, Scratch, Trail Blazer, Gulper … |
-| Acceleration | 0.95 | 1 | Slobber Tooth |
-| Armor | 1.00 | 16 | Night Shift (legs), Stealth Elf, Trap Shadow (body), Wolfgang … |
-| Handling | 1.00 | 28 | Drobit, Slobber Tooth, Breeze, Countdown … |
-| FirePower | 1.00 | 24 | Hijinx, Dr Krankcase, Scorp, Driver Eruptor … |
+| TopSpeed | 1.00 | 33 | Magna Charge (body), Countdown, Scratch, Voodood … |
+| Acceleration | 1.00 | 39 | Magna Charge (body), Countdown, Scratch, Voodood … |
+| Armor | 1.00 | 30 | Gulper, Driver Terrafin, Sprocket, Ignitor … |
+| Handling | 1.00 | 20 | Pain Yata, Spy Rise (body), Double Trouble, Swarm … |
+| FirePower | 1.00 | 40 | Trigger Happy, Ghost Roaster, Chef Pepper Jack, Kaos … |
 
 ## Notes
 
 * A figure marked **sharper variant exists** (`_Dark`, `_LG`, `Eon's Elite`)
-  races 0.10 stronger than the line above: same three points, moved off its
+  races 0.10 stronger than the line above: the same three points, moved off its
   weakest stat onto its strongest that still has room. Take the variant when you
   get to pick.
 * SWAP Force halves appear as `(legs)` and `(body)` because that is how the disc
-  stores them — two records per toy. If the engine adds the halves instead of
+  stores them - two records per toy. If the engine adds the halves instead of
   using one, a swapped figure reads double the spread shown here.
 * `Greeble` is the engine's own test dummy, not a real villain.
 * `python3 tools/pkz_stats_patch.py --report` prints the raw five floats per
   record if you want to re-rank with your own weights.
-
