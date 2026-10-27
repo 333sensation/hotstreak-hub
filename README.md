@@ -234,6 +234,7 @@ no arguments (`python3 tools/pkz_objects.py`).
 | `make_readme_images.py` | compose `docs/banner.png` and `docs/roster.png` out of that art |
 | `make_promo.py` | render `promo/promo.mp4`: game art, game music, one ffmpeg pipe |
 | `pkz_textures.py` | list/export every texture in a container |
+| `pkz_3ds.py` | read the 3DS build's containers (little-endian, zlib-wrapped) — used to settle what the 4-player mode needs |
 
 The rest (`pkz_ai_add`, `pkz_ai_append`, `pkz_pool_grow`, `pkz_pool_all`,
 `pkz_pool_fill`, `pkz_add_test`, `pkz_pool_terrain`, `pkz_text_scan`,
@@ -254,4 +255,9 @@ on what you value.
 - A racer has two refs. Swapping the character is safe; re-pointing a villain at
   its own hull is not, and is what produced corrupt racers. Villain records stay
   on the terrain's `RentAWreck_*` rental, which the Greeble dummies already use.
+- The game's own multiplayer is 2P split-screen, and going to the 3DS's four
+  players is a **code** limit, not a data one: the Wii disc already ships the 4P
+  splitscreen object and the player-3/4 UI art, while the part that decides how
+  many local players join lives in `gamelogic.rso`. `FINDINGS.md` has the
+  comparison against the 3DS build, read with `tools/pkz_3ds.py`.
 - No game files are distributed here. You need your own disc.

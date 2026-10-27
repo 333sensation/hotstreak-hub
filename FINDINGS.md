@@ -731,6 +731,77 @@ bytecode) to restore the online page and the `GLAPINetwork` init path, then
 implementing the auth/LSG protocol and the Wii TLS bypass. Everything else in
 the mod (roster, launcher, split-screen) is independent of that work.
 
+## Multiplayer: 4-player local is code, not data (checked against the 3DS)
+
+Asked for: "make multiplayer as it is on the 3DS, with 4-player local play".
+The Wii disc's local multiplayer (2P split-screen) is **already wired and
+complete**; what is 4-player on the 3DS is not data this build is missing. Both
+halves of that were checked, with the 3DS dump read through the new
+`tools/pkz_3ds.py` (see "Reading the 3DS build" below).
+
+**The data is there on both builds, object for object.**
+
+| | Wii | 3DS |
+|---|---|---|
+| player references in `BaseGameplay.pkz` | `Player1Reference`, `Player2Reference` | `Player1Reference`, `Player2Reference`, `PlayerObjectReference` |
+| per-level splitscreen overriders | `MNG_SplitscreenOverrider_2P` / `_4P` / `_Multiplayer`, in all 23 `*_Common.pkz` | the same three, **same keys** (`_2P` 36E03B5C, `_4P` DE2768C0, `_Multiplayer` 5EAAA9BB) |
+| 4-player UI art | `MENU_Glow_Player03/04`, `BUTTON_SkylanderSelection_Player03/04`, `BUTTON_MultiToySkylander01..08`, `CurrentRoomPlayerText01..04` | same set |
+
+So the Wii build ships the 4P viewport object, the 4P HUD art and 8 toy slots -
+left over from the shared asset pipeline - and no amount of key flipping reaches a
+mode whose *player joining* is 2P.
+
+**The joining logic is native code, not data.** The Wii's local multiplayer
+menu scripts are plain text inside `FrontScreen.pkz` and every one of them stops
+at two players:
+
+```
+return Menu_IsSplitScreenToysSelectionDoneByPlayerIndex(1) and
+       Menu_IsSplitScreenToysSelectionDoneByPlayerIndex(0)
+local playerIndex = Menu_GetCurrentPlayerActing()
+```
+
+The part that actually decides how many local players a session accepts is
+registered by `gamelogic.rso` (`MultiplayerMenuManager`, `IsLocalMultiplayer`,
+`Player_GetHasMultiplePlayers`, `SpawnLocalPlayer`), i.e. compiled PowerPC, and
+the online half that would have supplied the rest was never shipped ("Multiplayer
+on this disc" above: no `PAGE_MultiOnline_*`, `GLAPINetwork` never constructed).
+
+**Consequence.** Enabling 4-player local play is not a `.pkz` edit. It means
+patching the executable - the symbols to chase are the splitscreen manager's
+`InitSplit`, `uiNbPlayers`, `uiSplitWidth` / `uiSplitHeight`, `muiSplitAxis`,
+and the spawn path `SpawnLocalPlayer` - and the only verification available here
+is a boot test, because leaving the load screen needs input (see "The base that
+ships"). Everything else about the mode already works: the four multiplayer race
+playlists, the cups, the split-screen HUDs and the 2P flow.
+
+## Reading the 3DS build (`tools/pkz_3ds.py`)
+
+The 3DS romfs is the same game data in a different wrapper, and both differences
+are now documented and handled:
+
+* the container is **little-endian** (Wii is big-endian) - a plain one starts
+  `01 00 00 80` = tag `0x80000001`, and in the 16-byte chunk header the two u32s
+  swap: Wii `tag u16 u16 0 len`, 3DS `tag u16 u16 len 0`;
+* a file starting `b0 b1 be ba` is **zlib-compressed**: 0x8000 bytes of header
+  (+0x04 payload offset, +0x0C uncompressed size, rest 0xAA fill) followed by one
+  or more zlib streams, each inflating to a little-endian roceGS stream.
+
+On that dump 90 of the 782 files are plain and 691 are the zlib wrapper,
+including every file the multiplayer wiring lives in. Measured with the tool:
+
+| file | on disk | inflates to | objects |
+|---|---|---|---|
+| `BaseSkylander.pkz` | 98,304 | 174,028 (== its header's size) | 343 |
+| `BaseGameplay.pkz` | 3,014,656 | 6,154,009 | 1,234 |
+| `MultiplayerHuds.pkz` | 294,912 | 617,117 | 149 |
+| `L_ChompyMountain_Common.pkz` | 3,342,336 | 7,377,190 | 185 |
+
+That is how the `Player*Reference` and `MNG_SplitscreenOverrider_*` comparison
+above was made. The tool's object reader falls back to a tag sweep when a 3DS
+object frames differently from the Wii one, so `payload=0` in a listing means
+"the walk did not resolve that body", not "the object is empty".
+
 ## How many figures the disc can actually field
 
 `BaseSkylander.pkz` holds the toy catalogue (`0x5DA30426`, 437 entries) and the
