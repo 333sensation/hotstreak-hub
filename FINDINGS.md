@@ -863,6 +863,61 @@ path can be found and described, which is the step before any server could be
 written. The rest of the mod - stats above, and local 4-player play, whether on
 this build or the Wii one - needs no server at all.
 
+## What the 3DS build has that this disc does not (the data side)
+
+Asked for after the emulator run - connect the 3DS multiplayer to the Wii game, or
+recreate it - and then: start with the data-side port. Cross-play itself is not
+reachable: the two builds share no protocol, this disc's online half was never
+wired (`GLAPINetwork`'s constructor is never called) and the 3DS half needed
+Nintendo Network, gone since 2024. So the question the data can answer is how much
+of the 3DS multiplayer mode is *content* at all. Answer: hardly any of it.
+
+Measured with `tools/pkz_diff_builds.py`, which reads one file on each build and
+then tests every candidate name against all 786 Wii data files - a name missing
+from one Wii file is usually just that file's business, and only a name absent from
+the whole build is something this disc does not have.
+
+**The playlists are identical.** `Common.pkz` holds the cups and the multiplayer
+track lists as plain id arrays (type `27EB0086`). Every one of the 3DS build's 10
+records has a byte-identical counterpart in this disc's pristine cup order, 0
+records left over:
+
+    LandCupPlaylist, SeaCupPlaylist, SkyCupPlaylist          5 ids each
+    L_SuperMasterShortRacePlaylist                          1 id
+    L_/S_/A_RacePlayList_Multiplayer                        5 ids each
+    L_/S_/A_RacePlayList_Multiplayer_ActionPack            14 ids each
+
+That check has to run against `backups/Common.pkz.pristine`: the working
+`Common.pkz` carries the launcher's rolled line-up, and a diff against it reports a
+difference that is this repo's own doing.
+
+**The names agree almost everywhere.** 479 multiplayer-related names read out of
+the 3DS build (FrontScreen, MultiplayerHuds, Common, BaseGameplay) - **441 of them
+are already in the Wii data tree**. The 41 that are not:
+
+* 3DS screen furniture: `HUD_BottomScreen`, `HUD_3DS_DriverList(_Graph)`,
+  `MENU_ToySelect(_Background/_Glow)`, `MENU_/ICON_/TEXT_3DS_TourTrackSelect_*_Multi`,
+  `CUT_Outro*Position_Portal_3DS`, `OutroCamPosition_Portal_{Win,Fail}_3DS`
+* the online indicator the Wii build never needed: `MULTI_SignalStrength`,
+  `ICON_SignalStrength`, `ICON_/VSICON_SIGNALSTRENGTH_*`
+* one loading hint: `MENU_LoadingHint_MultiplayerPoints_01_D`
+* reader artefacts - a glued-on leading letter, e.g. `yWHUD_ButtonPrompt_InGame`
+  against this disc's `HUD_ButtonPrompt_InGame`: `jHUD_Player_HP_Fill_D`,
+  `nHUD_Glow_RaceStart_DA`, `oICON_CupsMenu_DA`, `s0ICON_Portal_Driver_DA`,
+  `wCcMENU_LoadingHint_BoneyPitRace_01_D`, `DICON_PlayerOneIdentifier_DA`
+* names this disc spells differently: it has `MENU_MultiLocal_Image` /
+  `MENU_MultiOnline_Image` rather than `MENU_Multi_Image`, and
+  `MENU_ButtonMultiLocal_*` / `MENU_ButtonMultiOnline_*` rather than
+  `MENU_ButtonMulti_R`
+
+So the 4P viewport object, the 4P HUD art, the 8 toy slots, the split-screen
+overrides, the cups, the multiplayer playlists and even the dead online UI assets
+are all already on this disc. A data-side port would mean adding UI objects the
+Wii's GoliathScript never names, which changes nothing playable. What is left is
+what the earlier sections already said: the mode's difference is code - the
+local-join cap registered by `gamelogic.rso`, and the network path that was never
+built.
+
 ## Reading the 3DS build (`tools/pkz_3ds.py`)
 
 The 3DS romfs is the same game data in a different wrapper, and both differences

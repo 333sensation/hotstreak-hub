@@ -59,6 +59,8 @@ import zlib
 
 MAGIC = b"\xb0\xb1\xbe\xba"
 PLAIN_TAG = b"\x01\x00\x00\x80"
+ROOT_TAG = b"\x01\x00\x00\x80"      # every package inflates to a stream starting with this
+PACKAGES_AT = 0x20                   # header: how many packages the file holds
 PAYLOAD_OFF = 0x8000
 BLOCK = 0x4000          # the granularity the header's block map counts in
 MAP_OFF = 0x30          # one u32 per block: which package owns it (0 = header)
@@ -68,6 +70,8 @@ KEYC = 0x8000138E
 REFC = 0x8000139C
 BODY = 0x80001391
 NEST = 0x80000C81
+MARKERS = (ROOT_TAG, WRAP.to_bytes(4, "little"), BODY.to_bytes(4, "little"),
+           REFC.to_bytes(4, "little"))     # what only real roceGS data contains
 
 
 # ---------------------------------------------------------------- container
@@ -111,6 +115,40 @@ def find_stream(d, start):
     return None
 
 
+def inflate_exact(d, off, stop=None):
+    """(output, consumed) of the stream at `off`; `consumed` is None if cut short."""
+    oo = zlib.decompressobj(15)
+    out = bytearray()
+    end = stop if stop is not None else len(d)
+    pos = off
+    while pos < end:
+        try:
+            out += oo.decompress(d[pos:pos + 8192])
+        except zlib.error:
+            break
+        pos += 8192
+        if oo.eof:
+            break
+    done = min(pos, end)
+    return bytes(out), (done - off - len(oo.unused_data) if oo.eof else None)
+
+
+def starts_like_a_package(d, off, head=ROOT_TAG):
+    """Does a zlib stream at `off` begin with the roceGS root chunk?"""
+    oo = zlib.decompressobj(15)
+    out = bytearray()
+    pos = off
+    while pos < len(d) and len(out) < len(head):
+        try:
+            out += oo.decompress(d[pos:pos + 8192])
+        except zlib.error:
+            return False
+        pos += 8192
+        if oo.eof:
+            break
+    return bytes(out[:len(head)]) == head
+
+
 def package_offsets(d):
     """Where the packaged streams start.
 
@@ -127,30 +165,72 @@ def package_offsets(d):
     return [offs[0]] if len(offs) <= 1 else []
 
 
-def streams(d):
-    """Every packaged stream in the file, in order, with what it inflates to.
+def packages(d):
+    """[(start, end)] of every package, straight out of the header's block map.
 
-    A container that is one package (its header lists one) is just a stream at
-    0x8000. A big archive is a sequence of them, and where one ends is not
-    written down anywhere this reader has found: the next one is taken to be the
-    next zlib header after a conservative guess at the end of this one. That is
-    how the objects below were located, so treat a big archive's package
-    boundaries as a working approximation rather than a parsed structure.
+    From 0x30 there is one u32 per 0x4000-byte block naming the package that block
+    belongs to: 0 is the header region, 0xAAAAAAAA the fill after the table, and
+    everything else is a package number. A package is a run of that many blocks,
+    which is the boundary this reader previously had to guess at.
     """
-    single = package_offsets(d)
-    if single:
-        data, eof = inflate(d, single[0])
-        return [(single[0], data, eof)] if data else []
-    pos = PAYLOAD_OFF if d[:4] == MAGIC else 0
+    runs = []
+    for i in range(len(d) // BLOCK):
+        v = u32(d, MAP_OFF + i * 4)
+        if v in (0, 0xAAAAAAAA):
+            continue
+        here = i * BLOCK
+        if runs and runs[-1][2] == v and runs[-1][1] == here:
+            runs[-1][1] = here + BLOCK
+        else:
+            runs.append([here, here + BLOCK, v])
+    return [(a, b) for a, b, _v in runs if b - a >= BLOCK]
+
+
+def streams(d):
+    """Every package in the file, in order, with what it inflates to.
+
+    One package is one zlib stream, and the file's data is those streams' output
+    back to back: only the first package starts on the roceGS root chunk, which is
+    why the earlier version of this function - which looked for further
+    root-tagged streams and, before that, for any zlib header - reported either
+    one package or a hundred fragments. Slicing on the block map gets the count
+    the header declares (112 in `Common.pkz`, 8 in `MultiplayerHuds.pkz`, 539 in
+    `FrontScreen.pkz`) and keeps each stream inside its own package.
+
+    The third field is how many input bytes a stream consumed, or None when its
+    closing bytes were cut off by the package boundary - a stream's tail is
+    routinely clipped, so zlib never reports `eof` on these.
+    """
+    if d[:4] != MAGIC:
+        return []
     out = []
-    while pos < len(d) - 1:
-        nxt = find_stream(d, pos)
-        if nxt is None:
+    # the first package is the one that starts on the root chunk, so find it by
+    # its output; every later package is then taken from the block map
+    first = None
+    for scan in range(PAYLOAD_OFF, min(len(d) - 4, PAYLOAD_OFF + 0x100)):
+        if (d[scan] == 0x78 and ((0x78 << 8) | d[scan + 1]) % 31 == 0
+                and starts_like_a_package(d, scan)):
+            first = scan
             break
-        data, eof = inflate(d, nxt)
+    after = PAYLOAD_OFF
+    if first is not None:
+        data, consumed = inflate_exact(d, first)
+        out.append((first, data, consumed))
+        after = first + (consumed or max(2, len(data) // 4))
+    for start, end in packages(d):
+        if end <= after:
+            continue
+        nxt = None
+        for scan in range(max(start, after), min(start + 0x100, end - 4)):
+            if d[scan] == 0x78 and ((0x78 << 8) | d[scan + 1]) % 31 == 0:
+                nxt = scan
+                break
+        if nxt is None:
+            continue
+        data, consumed = inflate_exact(d, nxt, stop=end)
         if data:
-            out.append((nxt, data, eof))
-        pos = nxt + 2 + max(len(data) // 4, 64)
+            out.append((nxt, data, consumed))
+            after = nxt + (consumed or max(2, len(data) // 4))
     return out
 
 
@@ -263,6 +343,48 @@ def scan_section(section):
         plen = u32(span, b + 8) if b >= 0 and b + 16 <= len(span) else 0
         rows.append((key, nm.group(0)[:-1].decode("latin1"), [], b"", plen))
     return rows
+
+
+def recover(d, min_out=4096):
+    """[(offset, bytes)] of every zlib stream in the file that carries roceGS data.
+
+    `streams()` is bounded by the block map, which is right for a package whose
+    rows line up and wrong for a run whose data starts a block earlier: on
+    `Common.pkz` it returns 53 of the 112 packages the header declares and misses
+    content the file certainly holds (the cup playlists among it). This walk does
+    not trust the map. It tries every zlib header in the file, inflates each one
+    until zlib stops, and keeps the ones whose output actually carries roceGS
+    structure - a wrapper, a data chunk, a reference table or the root chunk -
+    which noise from a header inside compressed data does not produce. Overlapping
+    hits are collapsed onto the earliest one, so the pieces are disjoint and in
+    file order.
+
+    Candidates are tested at every offset rather than from where the last piece
+    ended, so a piece that starts inside another one's span can never hide the
+    streams after it; overlaps are collapsed at the end instead.
+
+    This is for reading content, not for writing it: a piece proves a name is in
+    the file, and no piece claims to be the whole package.
+    """
+    hits = []
+    n = len(d)
+    pos = PAYLOAD_OFF if d[:4] == MAGIC else 0
+    while pos < n - 4:
+        if d[pos] != 0x78 or ((0x78 << 8) | d[pos + 1]) % 31:
+            pos += 1
+            continue
+        head, _e = inflate_exact(d, pos, stop=min(n, pos + 0x4000))
+        if len(head) >= min_out and any(m in head for m in MARKERS):
+            full, consumed = inflate_exact(d, pos)
+            hits.append((pos, full, consumed))
+        pos += 1
+    kept = []
+    for off, out, consumed in hits:
+        end = off + (consumed if consumed else max(2, len(out) // 4))
+        if kept and off < kept[-1][2]:
+            continue
+        kept.append((off, out, end))
+    return [(o, out) for o, out, _e in kept]
 
 
 def objects(sections):

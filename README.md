@@ -38,9 +38,17 @@ out with the **same spread the Wii build's patch gives them**. The file keeps it
 exact size, and the result is laid out for Luma's layeredfs, so the romfs needs
 no repack: copy `3ds/titles/...` over your SD card's `luma/titles/...`.
 
-The opponent cast and cups are not ported yet - the 3DS build has no
-`RacerAIInfo` records to recast where this reader can see them, and its online
-mode's endpoints live in its executable, not in the romfs. `FINDINGS.md` has both.
+The opponent cast is not ported yet - the 3DS build has no `RacerAIInfo` records
+to recast where this reader can see them, and its online mode's endpoints live in
+its executable, not in the romfs. `FINDINGS.md` has both.
+
+The multiplayer data, though, is the same on both builds. Comparing them with
+`tools/pkz_diff_builds.py`: all ten of the 3DS build's cup and multiplayer playlist
+records are identical to this disc's pristine line-up, and 441 of the 479
+multiplayer-related names read out of the 3DS build already exist somewhere in the
+Wii data tree. The 41 that do not are its own screen furniture - bottom screen,
+3DS tour track select, toy select, online signal strength - plus a few name
+variants. So nothing on the data side would change what the mode does.
 
 ## Promo clip
 
@@ -256,6 +264,7 @@ no arguments (`python3 tools/pkz_objects.py`).
 | `pkz_textures.py` | list/export every texture in a container |
 | `pkz_3ds.py` | read the 3DS build's containers (little-endian, zlib-wrapped) — used to settle what the 4-player mode needs |
 | `pkz_3ds_stats.py` | the stats mod, ported to the 3DS romfs: same spreads on 198 of 203 figures, written back at the same size |
+| `pkz_diff_builds.py` | compare a data file between the disc and the 3DS build, then test the 3DS's names against all 786 Wii files - how the 4-player and online question was settled |
 
 The rest (`pkz_ai_add`, `pkz_ai_append`, `pkz_pool_grow`, `pkz_pool_all`,
 `pkz_pool_fill`, `pkz_add_test`, `pkz_pool_terrain`, `pkz_text_scan`,
@@ -281,4 +290,9 @@ on what you value.
   splitscreen object and the player-3/4 UI art, while the part that decides how
   many local players join lives in `gamelogic.rso`. `FINDINGS.md` has the
   comparison against the 3DS build, read with `tools/pkz_3ds.py`.
+- The disc's online half is not switched off but **absent**: `GLAPINetwork` is never
+  constructed, there is no `PAGE_MultiOnline_*` page, and the Wii's own online auth
+  (Nintendo WFC) had already been shut down before this game shipped. Online play
+  today means Dolphin netplay over the shipped split-screen - the launcher's PLAY
+  WITH A FRIEND - not the game's netcode.
 - No game files are distributed here. You need your own disc.
