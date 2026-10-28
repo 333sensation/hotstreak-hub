@@ -8,11 +8,13 @@ the same size. So instead of stuffing every figure into the container, this tool
 re-points the 56 driver infos plus the 15 villain infos - all already referenced
 by the enemy pools - at a random cast of the playable figures.
 
-A recast villain info is also put on that terrain's `RentAWreck_*` (the vehicle
-the shipped Greeble bots drive). That is the only `(character, AI template,
-vehicle)` combination proven to work on every terrain: leaving a villain info on
-its own hull (`GoldenQueen_Boat`, `DrKrankcase_Car`, ...) while swapping the
-character under it is what made a fresh image come up with a corrupt racer.
+The 12 villain infos and the 3 `Greeble*Info` dummies are **not** recast. Their
+figure and their hull are one pair and the engine validates it
+(`IsDriverVehicleCorrectPair`, `GetVillainVehicle`), so a swapped figure under a
+villain hull - or a villain figure on a borrowed hull - comes out on the free /
+scrap vehicle. `tools/pkz_racer_vehicles.py` puts their shipped triples back and
+re-points the pools' Greeble dummy entries at real villains, so no scrap vehicle
+is fielded at all.
 
 Run it with a different `--seed` for every image and each race fields a
 different random cast of characters.
@@ -25,6 +27,7 @@ import sys
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import pkz_pool_swap as pw
+import pkz_racer_vehicles as VEHICLES
 
 INFO_TYPE = 0x45BA524C
 CATALOG_TYPE = 0x5DA30426
@@ -33,7 +36,7 @@ VEHICLE_RE = re.compile(r"(Plane|Car|Boat)_Stats$|^RentAWreck_", re.I)
 # stats objects that belong to a vehicle part rather than to a figure
 PART_RE = re.compile(r"_(Body|Legs|Arms|Head|Top|Bottom|Wheels?|Wings?|Turret|Weapon"
                      r"|Chassis|Hull|Frame|Bumper|Spoiler|Exhaust)$", re.I)
-RENTAL = {"air": "RentAWreck_Plane", "land": "RentAWreck_Car", "sea": "RentAWreck_Boat"}
+RENTAL = {"air": "RentAWreck_Plane", "land": "RentAWreck_Car", "sea": "RentAWreck_Boat"}  # dummies only
 TERRAIN_POOLS = (
     ("EnemyAIList_Air_ActionPack", "air"),
     ("EnemyAIList_Land_ActionPack", "land"),
@@ -64,6 +67,8 @@ def main():
     ap.add_argument("--catalog", default="disc/files/Data/BaseSkylander.pkz")
     ap.add_argument("--seed", type=int, default=None, help="default: random each run")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--ref", default="backups/BaseGameplay.pkz.pristine",
+                    help="file holding the shipped figure+hull pairs")
     ap.add_argument("--must", default="",
                     help="comma separated names that must be in the cast, e.g. "
                          "Spyro,Whirlwind,Bash")
@@ -158,20 +163,26 @@ def main():
         fig, fig_key = remaining.pop()
         recast(iname, fig, fig_key, None, terrain)
 
-    # and the villain infos (which the pools also reference) get the same
-    # treatment, on the terrain rental the Greeble bots are proven with
-    print("\nvillain infos recast:")
-    for terrain, names in per_terrain.items():
-        for iname in names:
-            if not remaining:
-                remaining = list(pool_chars)
-                rng.shuffle(remaining)
-            fig, fig_key = remaining.pop()
-            recast(iname, fig, fig_key, rental[terrain], terrain)
+    # the villain infos are NOT recast: a villain record's figure and hull are one
+    # pair, and the engine validates it (IsDriverVehicleCorrectPair /
+    # GetVillainVehicle), so a swapped figure under a villain hull - or a villain
+    # figure on a borrowed hull - comes out on the free/scrap vehicle
+    print("\nvillain infos left as shipped: %s"
+          % ", ".join(sorted(n for t in per_terrain for n in per_terrain[t])))
 
     if args.dry_run:
         print("\ndry run - nothing written")
         return 0
+
+    # put the shipped figure+hull pairs back on anything that is not a driver,
+    # and field real villains instead of the scrap-driving Greeble dummies
+    ref = open(args.ref, "rb").read() if os.path.exists(args.ref) else bytes(d)
+    patched, pairs = VEHICLES.apply(bytes(d), ref)
+    d = bytearray(patched)
+    patched, greebles = VEHICLES.drop_greebles(bytes(d), ref)
+    d = bytearray(patched)
+    print("\nshipped pairs restored on %d records, %d Greeble dummy slots re-pointed"
+          % (len(pairs), len(greebles)))
 
     out = bytes(d)
     orig = open(args.src, "rb").read()

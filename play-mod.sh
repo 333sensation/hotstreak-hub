@@ -12,7 +12,7 @@
 set -eu
 
 HERE=$(cd "$(dirname "$0")" && pwd)
-IMAGE="$HERE/skylanders-scr-mod.wbfs"
+IMAGE="$HERE/hotstreak-hub.wbfs"
 DOLPHIN=/Applications/Dolphin.app/Contents/MacOS/Dolphin
 
 [ -x "$DOLPHIN" ] || { echo "Dolphin not found at $DOLPHIN" >&2; exit 1; }

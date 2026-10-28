@@ -1,10 +1,32 @@
-# Promo clip
+# Hotstreak Hub — promo material
 
-`promo.mp4` — 32 s, 1280×720, 30 fps, H.264 + AAC 48 kHz stereo, ~4 MB.
+Everything here is generated from the disc's own artwork by
+`tools/make_promo.py` (the 16:9 clip) and `tools/make_promo_kit.py` (the social
+set). No external images, no stock footage.
 
-Every pixel is the disc's own artwork (title logo, front-screen background,
-`_Large` character portraits). The music is a cue cut out of the game's streamed
-audio, extracted with [SSCR-Audio-Tool](https://github.com/Gopooo/SSRC-Audio-Tool).
+| file | what it is |
+|---|---|
+| `promo.mp4` | 32 s, 1280x720, H.264 + AAC — the long clip |
+| `reel.mp4` | 14 s, 1080x1920, H.264 + AAC — vertical, for Reels / Shorts / TikTok |
+| `instagram/01-random-cast.png` | 1080x1080 post: the random cast |
+| `instagram/02-stats.png` | 1080x1080 post: per-figure stat spreads (read from the patched pkz) |
+| `instagram/03-bot-speed.png` | 1080x1080 post: the uniform bot speed per difficulty |
+| `instagram/04-cups.png` | 1080x1080 post: the rolled cup line-up |
+| `instagram/05-netplay.png` | 1080x1080 post: two machines, one session code |
+| `instagram/story.png` | 1080x1920 story / swipe-up card |
+| `flyer.png`, `flyer.pdf` | A4 at 300 dpi — printable flyer |
+
+```sh
+python3 tools/make_promo_kit.py              # the whole social set
+python3 tools/make_promo_kit.py --posts      # just the square cards
+python3 tools/make_promo_kit.py --reel       # just the vertical clip
+python3 tools/make_promo.py --audio bed.wav  # the 16:9 clip (needs a music bed)
+```
+
+The numbers on the cards are not typed in: the stat bars come out of the patched
+`BaseSkylander.pkz`, the bot speeds out of the `AIPersonality` records in
+`BaseGameplay.pkz`, and the cup names out of `Common.pkz` — so a re-render after
+a rebuild shows what the mod actually does.
 
 ## The five scenes
 

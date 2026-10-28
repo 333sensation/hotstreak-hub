@@ -1,6 +1,6 @@
 # Skylanders SuperChargers Racing — roster launcher
 
-A launcher window for the modded image in `scr-wii/`. It holds the game, rolls a
+A launcher window for the modded image in this folder. It holds the game, rolls a
 new cast of opponents before every boot, writes that cast into the disc and
 starts it. All artwork in the window is the game's own, pulled out of the disc by
 `tools/extract_art.py` (556 portraits, 216 minimap icons, the title logo).
@@ -32,7 +32,7 @@ auto-detect guesses wrong:
 
 | | |
 |---|---|
-| **PLAY** | rolls a cast, patches `BaseGameplay.pkz`, rebuilds `skylanders-scr-mod.wbfs` (~10 s) and starts Dolphin |
+| **PLAY** | rolls a cast, patches `BaseGameplay.pkz`, rebuilds `hotstreak-hub.wbfs` (~10 s) and starts Dolphin |
 | **ROLL NEW CAST** | rolls without booting, so you can look at the field first |
 | **PIN FIGURES** | figures that must appear in every solo cast (click a portrait in the grid to pin it) |
 | **PLAY WITH A FRIEND** | netplay session browser — see below |
@@ -52,14 +52,14 @@ alike on the grid). Vehicles, magic items, adventure
 and level packs, SWAP Force halves and the racing trophies are not figures and
 are excluded (see `../FINDINGS.md` for the toy-number ranges).
 
-The 71 spots are 56 driver records, 12 villain records and the 3 `Greeble*Info`
-test dummies. Vehicles are **not** re-pointed when a figure moves in: the driver
-records keep the hull the disc pairs them with, and the twelve villain records
-sit on that terrain's `RentAWreck_*` (the rental the Greeble dummies already
-drive) - a swapped figure under a villain's own hull is what comes up as a
-corrupt racer, see `../FINDINGS.md`. The visible cost: on the sea grid the four
-sea villains share one boat, so a few opponents look alike. That is the safe
-configuration, not a broken pool.
+The **56 driver records** are the ones a session rolls. The 12 villain records and
+the 3 `Greeble*Info` test dummies keep the figure and the hull they shipped with:
+the engine validates that pair (`IsDriverVehicleCorrectPair`, `GetVillainVehicle`),
+so a recast figure under a villain hull - or a villain figure on a borrowed hull -
+comes out on the free/scrap vehicle. Vehicles are therefore **never** re-pointed:
+a driver keeps the hull the disc pairs it with whoever is under the helmet, and
+`tools/pkz_racer_vehicles.py` also re-points the pools' Greeble dummy entries at
+real villains, so no scrap vehicle is fielded. See `../FINDINGS.md`.
 
 ## Your Skylander and vehicle (the portal)
 
@@ -96,7 +96,7 @@ random per boot — so both players derive the roster from a six-character
    NETWORK** as soon as it is announced — no server, no sign-up, it is a UDP
    broadcast on port 9797. Click it (or type the code) and press JOIN.
 3. In Dolphin: **Tools → Start Netplay → Host / Connect**, pick
-   `skylanders-scr-mod.wbfs`, port 2626. Across the internet, forward port 2626
+   `hotstreak-hub.wbfs`, port 2626. Across the internet, forward port 2626
    on the host.
 4. In game, player 2 presses a button on the second controller for split-screen.
 
@@ -123,7 +123,7 @@ location, `wit` location, video backend, fonts, cursor, wheel events.
 
 - `SkylandersLauncher.py` — the window (`--check` for diagnostics)
 - `pipeline.py` — session (roll/patch/netplay codes) and build/launch/export
-- `roster.py` — parses the 71 racer slots out of `BaseGameplay.pkz` and rewrites them
+- `roster.py` — parses the 56 recastable driver slots out of `BaseGameplay.pkz` and rewrites them
 - `assets.py` — joins the figure catalogue to the extracted art (cached in `cache/`)
 - `toys.py` — the tag library, the portal folder and Dolphin's portal settings
 - `sessions.py` — LAN announce/discover for the session browser

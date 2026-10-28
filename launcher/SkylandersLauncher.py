@@ -596,7 +596,7 @@ class NetplayDialog(tk.Toplevel):
 class LauncherApp:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Skylanders SuperChargers Racing \u2014 Roster Launcher")
+        self.root.title("Hotstreak Hub \u2014 Skylanders SuperChargers Racing")
         self.root.configure(bg=BG)
         w, h = 1460, 880
         x = max(0, (self.root.winfo_screenwidth() - w) // 2)

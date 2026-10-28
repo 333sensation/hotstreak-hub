@@ -197,7 +197,7 @@ def scene_logo(art, t, span):
 
     sub = font(30, heavy=True)
     d2 = ImageDraw.Draw(frame)
-    tracked(d2, (W // 2, 470), "ROSTER MOD", sub, ACCENT,
+    tracked(d2, (W // 2, 470), "HOTSTREAK HUB", sub, ACCENT,
             spacing=9, alpha=a, anchor_left=False)
     small = font(21)
     tracked(d2, (W // 2, 520), "SKYLANDERS: SUPERCHARGERS RACING  \u00b7  WII",
@@ -211,10 +211,10 @@ def scene_slots(art, t, span):
     d = ImageDraw.Draw(frame)
     head = font(76, heavy=True)
     a = int(255 * ease_out((t - 0.1) / 0.6))
-    glow_text(frame, (72, 96), "71 RACER SLOTS", head, INK, alpha=a, glow=ACCENT)
+    glow_text(frame, (72, 96), "56 RECAST SLOTS", head, INK, alpha=a, glow=ACCENT)
     d = ImageDraw.Draw(frame)
     line = font(26)
-    d.text((78, 196), "56 drivers + 12 villains + 3 test dummies, every terrain",
+    d.text((78, 196), "56 driver records can be recast, every terrain",
            font=line, fill=DIM + (a,))
     d.text((78, 234), "one figure per character, no repeats in a grid",
            font=line, fill=DIM + (a,))
@@ -250,9 +250,9 @@ def _with_frame(card, size):
 
 FEATURES = (
     ("RANDOM CAST", "a new field of opponents every boot, ~10 s to rebuild"),
-    ("BALANCED STATS", "194 records rewritten to five even profiles"),
+    ("STATS FOR EVERY FIGURE", "203 records, one spiked spread each"),
+    ("UNIFORM FAST BOTS", "one speed for every bot: 1.18 / 1.20 / 1.22"),
     ("RANDOM CUPS", "the five circuits of each cup, reshuffled"),
-    ("YOUR SKYLANDER", "the figure you race as, on the emulated portal"),
 )
 
 
@@ -315,7 +315,7 @@ def scene_roll(art, t, span):
 
     p = ease_out((t - 3.6) / 0.6)
     if p > 0:
-        d.text((W // 2, 560), "71 slots  \u00b7  one figure per character",
+        d.text((W // 2, 560), "56 slots  \u00b7  one figure per character",
                font=font(34, heavy=True), fill=INK + (int(255 * p),), anchor="mm")
         d.text((W // 2, 606), "pin your favourites, or let it roll",
                font=font(22), fill=DIM + (int(255 * p),), anchor="mm")
@@ -333,7 +333,7 @@ def scene_outro(art, t, span):
            fill=INK + (int(255 * p),), anchor="ra")
     d.text((W - 300, 200), "333sensation/", font=font(40, heavy=True),
            fill=ACCENT + (int(255 * p),), anchor="ra")
-    d.text((W - 300, 250), "skylanders-scr-mod", font=font(40, heavy=True),
+    d.text((W - 300, 250), "hotstreak-hub", font=font(40, heavy=True),
            fill=ACCENT + (int(255 * p),), anchor="ra")
 
     q = ease_out((t - 0.9) / 0.7)

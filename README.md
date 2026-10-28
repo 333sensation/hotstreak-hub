@@ -1,4 +1,6 @@
-# Skylanders: SuperChargers Racing (Wii) — roster mod + launcher
+# Hotstreak Hub
+
+Roster mod + launcher for **Skylanders: SuperChargers Racing** (Wii, `SKNE52`).
 
 ![Skylanders: SuperChargers Racing](docs/banner.png)
 
@@ -8,18 +10,22 @@ from working out how the engine stores racers.
 
 The game ships **71 racer slots** — 56 driver records and 12 villain records, one
 per terrain (air / land / sea), plus 3 `Greeble*Info` test dummies — and every
-slot is two object refs: the **character** and the **vehicle** it drives. This
-repo rewrites the character ref of each slot in place, so the container keeps its
-exact size and the disc keeps loading.
+slot is three object refs: the **character**, the **AI template** and the
+**vehicle** it drives. The 56 driver records are recast in place (each keeps its
+own hull); the 15 villain/Greeble records keep all three as shipped, because the
+engine validates the figure-against-hull pair and falls back to the free vehicle
+when it does not match. The container keeps its exact size and the disc keeps
+loading.
 
 ## What it does
 
 | | |
 |---|---|
-| **Random cast** | every boot fields a different set of opponents: `launcher/` rolls a cast over the disc's 224 catalogue figures and patches the 71 slots, then repacks the image (~10 s) |
+| **Random cast** | every boot fields a different set of opponents: `launcher/` rolls a cast over the disc's 224 catalogue figures and patches the 56 driver slots, then repacks the image (~10 s) |
 | **Stats for every figure** | `tools/pkz_stats_patch.py` fills in all 203 character stat records — 148 of them ship as empty stubs — with one spiked spread per figure: every figure gets the same three points and spends them very differently, so no two drive alike |
+| **Uniform, much faster bots** | `tools/pkz_ai_speed.py` gives every bot the *same* speed - one number per difficulty band (easy 1.18 / medium 1.20 / hard 1.22, on the personality speed scalar the disc shipped at 0.80–1.20), 3.4 % apart, so the whole field runs together and the ceiling is the difficulty's. The 0.90 pace the shipped opponents raced at is gone: the field is 31–47 % quicker, while Easy still fields the passive personalities and Hard the aggressive ones |
 | **Random cups** | `tools/pkz_cup_random.py` re-points the three cup playlists at a fresh order of the disc's own circuits |
-| **Launcher** | a tkinter window: PLAY (roll + patch + repack + boot), pin figures, netplay session codes for two-machine split-screen, export to an SD card layout for a real Wii |
+| **Launcher** | the Hub window: PLAY (roll + patch + repack + boot), pin figures, netplay session codes for two-machine split-screen, export to an SD card layout for a real Wii |
 | **Your Skylander** | the figure *you* race as comes from the Portal of Power, not the pkz — the launcher installs the chosen 1024-byte tag image into the emulated portal and enables it in Dolphin |
 
 ## The 3DS build
@@ -50,7 +56,7 @@ Wii data tree. The 41 that do not are its own screen furniture - bottom screen,
 3DS tour track select, toy select, online signal strength - plus a few name
 variants. So nothing on the data side would change what the mode does.
 
-## Promo clip
+## Promo material
 
 [![The promo clip: 32 seconds of the mod](docs/promo.gif)](promo/promo.mp4)
 
@@ -58,9 +64,19 @@ variants. So nothing on the data side would change what the mode does.
 [`promo/promo.mp4`](promo/promo.mp4) (4 MB). The art is the disc's own; the
 soundtrack is a music cue cut out of `Streams2.dat` with
 [SSCR-Audio-Tool](https://github.com/Gopooo/SSRC-Audio-Tool).
-`tools/make_promo.py` renders it, and
-[`promo/README.md`](promo/README.md) documents which stream was used, why, and
-how to re-render or swap the music.
+
+There is a whole social set beside it, all rendered from the same disc art and
+from the numbers in the patched files (`tools/make_promo_kit.py`):
+
+| | |
+|---|---|
+| [`promo/reel.mp4`](promo/reel.mp4) | 14 s vertical reel, 1080x1920 |
+| [`promo/instagram/`](promo/instagram) | five 1080x1080 posts + a story card |
+| [`promo/flyer.pdf`](promo/flyer.pdf) | A4 flyer at 300 dpi (PNG too) |
+
+`tools/make_promo.py` renders the 16:9 clip and `tools/make_promo_kit.py` the
+rest; [`promo/README.md`](promo/README.md) lists every file, documents which
+stream the music came from, and how to re-render or swap it.
 
 ![Fifty of the figures the disc can field](docs/roster.png)
 
@@ -98,7 +114,7 @@ python3 setup.py /path/to/your/game.iso  # unpack, make the baselines, build the
 `setup.py` is the whole install: it finds `wit` and Dolphin, unpacks the image
 into `disc/`, copies the four pristine `.pkz` baselines the patcher works from
 into `backups/`, pulls the game's own portraits/minimaps out of the disc for the
-window, and repacks `skylanders-scr-mod.wbfs`. Re-running it is safe — it only
+window, and repacks `hotstreak-hub.wbfs`. Re-running it is safe — it only
 does the steps that are missing, and `--force` rebuilds the image and the
 artwork.
 
@@ -166,13 +182,15 @@ refs read *character, AI template, vehicle* plus the terrain byte at the end.
 Then the mod, one change at a time, repacking and verifying after each:
 
 ```sh
-python3 tools/pkz_random_bots.py        # recast the 71 racer slots in place
+python3 tools/pkz_random_bots.py        # recast the 56 driver slots in place
+python3 tools/pkz_ai_speed.py           # one uniform (fast) bot pace per difficulty band
+python3 tools/pkz_racer_vehicles.py     # shipped figure+hull pairs, no scrap dummies
 python3 tools/pkz_stats_patch.py        # real racing stats for every character (BaseSkylander.pkz)
 python3 tools/pkz_cup_random.py --print # show a cup line-up, then drop --print to write it
 python3 tools/extract_art.py            # the game's own portraits for the window
 
-$WIT copy disc skylanders-scr-mod.wbfs --overwrite
-$WIT verify skylanders-scr-mod.wbfs | tail -1     # must read +OK ... SKNE52
+$WIT copy disc hotstreak-hub.wbfs --overwrite
+$WIT verify hotstreak-hub.wbfs | tail -1     # must read +OK ... SKNE52
 ```
 
 Do not trust the repack alone — check that the file inside the image is the one
@@ -180,14 +198,14 @@ you patched:
 
 ```sh
 md5 -q disc/files/Data/BaseGameplay.pkz
-$WIT extract skylanders-scr-mod.wbfs /tmp/check
+$WIT extract hotstreak-hub.wbfs /tmp/check
 md5 -q /tmp/check/files/Data/BaseGameplay.pkz     # same hash
 ```
 
 Boot it:
 
 ```sh
-./play-mod.sh           # = Dolphin -v ogl -e skylanders-scr-mod.wbfs
+./play-mod.sh           # = Dolphin -v ogl -e hotstreak-hub.wbfs
 ```
 
 Four things cost me time; they are worth knowing before you hit them:
@@ -211,7 +229,7 @@ Undo any of it by copying the pristine pair back and repacking:
 ```sh
 cp backups/BaseGameplay.pkz.pristine disc/files/Data/BaseGameplay.pkz
 cp backups/Common.pkz.pristine       disc/files/Data/Common.pkz
-$WIT copy disc skylanders-scr-mod.wbfs --overwrite
+$WIT copy disc hotstreak-hub.wbfs --overwrite
 ```
 
 ## Layout
@@ -220,7 +238,7 @@ $WIT copy disc skylanders-scr-mod.wbfs --overwrite
 setup.py      one-command install: unpack, baselines, artwork, image
 run.sh        start the launcher (run.cmd on Windows)
 launcher/     the window: session roll, patch, repack, launch, netplay, export
-  roster.py       the 71 racer slots out of BaseGameplay.pkz
+  roster.py       the 56 recastable driver slots out of BaseGameplay.pkz
   pipeline.py     session codes + build/launch/export
   toys.py         tag library, portal folder, Dolphin's portal settings
   assets.py       joins the figure catalogue to the extracted art
@@ -254,7 +272,9 @@ no arguments (`python3 tools/pkz_objects.py`).
 |---|---|
 | `pkz_objects.py` | parse a `.pkz`, list its objects and resolve the 32-bit ids they reference — start here |
 | `pkz_refs.py` | the per-object reference tables (the character/vehicle refs live here) |
-| `pkz_random_bots.py` | recast the 71 racer slots as a random cast (what the launcher runs) |
+| `pkz_random_bots.py` | recast the 56 driver slots as a random cast (what the launcher runs); the 15 villain/Greeble records keep their shipped figure+hull pair |
+| `pkz_ai_speed.py` | one bot speed per difficulty band, identical for every bot (`--easy/--medium/--hard`, default 1.18/1.20/1.22) |
+| `pkz_racer_vehicles.py` | keeps every racer on the figure+hull pair it shipped with and fields real villains instead of the scrap-driving Greeble dummies |
 | `pkz_stats_patch.py` | give every character its own racing stats — a spiked spread per figure, same 3.0 total; fills the 148 empty stat records |
 | `pkz_cup_random.py` | re-point the three cup playlists at the disc's own circuits |
 | `pkz_pool_swap.py` | move villains into the driver pools without resizing anything |
@@ -282,9 +302,12 @@ on what you value.
 
 - Every edit is **same-size**: the disc's key registry is a hash index, so adding
   objects shifts offsets and the game hangs. `FINDINGS.md` has the details.
-- A racer has two refs. Swapping the character is safe; re-pointing a villain at
-  its own hull is not, and is what produced corrupt racers. Villain records stay
-  on the terrain's `RentAWreck_*` rental, which the Greeble dummies already use.
+- A racer has two refs, and the engine validates the *pair*
+  (`IsDriverVehicleCorrectPair`, `GetVillainVehicle` in `gamelogic.rso`): a figure
+  on a hull it does not belong to comes out on the free/scrap vehicle. So the 56
+  driver records are recast and keep their own hull, while the 12 villain records
+  stay exactly as shipped - and the pools' Greeble dummy entries (the only other
+  scrap drivers) are re-pointed at real villains. `tools/pkz_racer_vehicles.py`.
 - The game's own multiplayer is 2P split-screen, and going to the 3DS's four
   players is a **code** limit, not a data one: the Wii disc already ships the 4P
   splitscreen object and the player-3/4 UI art, while the part that decides how

@@ -1,6 +1,6 @@
 # Skylanders: SuperChargers Racing (Wii, SKNE52) — modding findings
 
-Everything below was derived from the extracted disc (`scr-wii/disc`) and the
+Everything below was derived from the extracted disc (`disc`) and the
 unstripped ELF (`disc/files/goliath.engine.wii.final.elf`, 44,938 symbols).
 
 ## Engine / container
@@ -14,7 +14,7 @@ unstripped ELF (`disc/files/goliath.engine.wii.final.elf`, 44,938 symbols).
     `crc32("RACERAILIST") = 0xCAFB9B03`.
 * Scripts (Lua-like, e.g. `if ... then ... end`) are stored **uncompressed** as
   plain text inside the same containers, so they are greppable and patchable
-  (`scr-wii/tools/pkz_text_scan.py` dumps 1,307 blobs / 5.2 MB).
+  (`tools/pkz_text_scan.py` dumps 1,307 blobs / 5.2 MB).
 
 ## Character stats
 
@@ -41,7 +41,7 @@ in five big-endian IEEE-754 floats in 0.0–1.0 (the UI draws 0–5 pips):
 | `Kaos_Stats` | 0.90 | 0.50 | 0.60 | 0.70 | 0.80 |
 | `CaptainFrightbeard_Stats` | 0.70 | 0.40 | 0.60 | 0.50 | 0.80 |
 
-`scr-wii/tools/pkz_stats_scan.py` extracts them.
+`tools/pkz_stats_scan.py` extracts them.
 
 **Coverage (corrected).** The "only 34 stat objects" figure above was a naming
 artefact, and so was the later "~150 Skylanders have no `_Stats` object". Counting
@@ -191,7 +191,7 @@ Verification performed on the patched file:
 * re-running the tool on its own output reproduces the file byte for byte;
 * the chunk tree still tiles and the object-type histogram is unchanged
   (`pkz_pool_grow.tree_ok`), i.e. nothing moved but the floats;
-* `wit copy disc skylanders-scr-mod.wbfs` → `wit verify` reports
+* `wit copy disc hotstreak-hub.wbfs` → `wit verify` reports
   `+OK ... DATA SKNE52` (11 s), and extracting `files/Data/BaseSkylander.pkz`
   from the image gives md5 `b74d29363041ca175717ed30f37091ea`, the same as
   the patched file in `disc/`.
@@ -436,7 +436,7 @@ Verification performed (independent of the patch script):
   pools (352 -> 608 / 576 / 576 / 624);
 * all four pools have as many ref-table entries as data keys, refs ⊇ data, and
   all 18 `RacerAIList` objects satisfy the same invariant;
-* `wit COPY disc skylanders-scr-mod.wbfs` -> `wit verify` reports `+OK … SKNE52`,
+* `wit COPY disc hotstreak-hub.wbfs` -> `wit verify` reports `+OK … SKNE52`,
   and both edited files extracted back out compare equal to the working tree;
 * Dolphin boots the image with no error output (OpenGL backend).
 
@@ -578,13 +578,13 @@ It picks 68 distinct characters out of the **122** toys the catalogue knows (56
 driver infos + 12 villain infos; the three Greeble objects are left alone).
 
 `./reroll.sh [--seed N] [--must Spyro,Whirlwind,Bash]` does the whole cycle:
-roll a cast, repack `skylanders-scr-mod.wbfs`, `wit verify`. Rerolling a few
+roll a cast, repack `hotstreak-hub.wbfs`, `wit verify`. Rerolling a few
 times covers all 128 characters across discs; one disc covers 71 because that is
 how many AI records exist and the container cannot grow (see below).
 
 Revert with `cp backups/BaseGameplay.pkz.pristine disc/files/Data/BaseGameplay.pkz`.
 
-### Backups (`scr-wii/backups/`)
+### Backups (`backups/`)
 
 | file | what it is |
 |---|---|
@@ -663,7 +663,7 @@ driver pools + those 15 villain records re-pointed at a random cast of playable
 figures (all in place, size unchanged); `BaseSkylander.pkz` = spiked stats for
 every figure (216 records rewritten in place, 3,499 bytes changed, file size
 unchanged, md5 `b74d29363041ca175717ed30f37091ea`).
-`skylanders-scr-mod.wbfs` was repacked from that tree and verified
+`hotstreak-hub.wbfs` was repacked from that tree and verified
 (`wit verify` → `+OK … SKNE52`, both files inside the image compare equal to the
 working tree), and the game starts and loads with it.
 
@@ -1058,40 +1058,59 @@ doff+36   vehicle    (what the racer drives)
 wrapper's `0x15,id` table). The vehicle is written **once, at bake time**, by
 `tools/pkz_random_bots.py`.
 
-| | pristine | shipped base |
-|---|---|---|
-| distinct vehicle refs | 35 | 23 |
-| driver infos on their own hull | 56 | 56 |
-| villain infos on their own hull | 12 | 0 - all twelve on the terrain rental |
+| | pristine | rental build (superseded) | now |
+|---|---|---|---|
+| distinct vehicle refs | 35 | 23 | **35** |
+| driver infos on their own hull | 56 | 56 | 56 |
+| villain + Greeble infos on their shipped hull | 15 | 0 - all fifteen on the terrain rental | **15** |
+| racer records still on a rental | 0 | 15 | **0** |
+| pool entries pointing at a Greeble dummy | 10 | 10 | **0** |
 
-The twelve villain infos (`ChefPepperJackInfo`, `CluckInfo`, `PainYataInfo`,
-`WolfgangInfo`, `ChompyMageInfo`, `CountMoneyBoneInfo`, `DrKrankcaseInfo`,
-`GlumshanksInfo`, `CaptainFrightbeardInfo`, `GoldenQueenInfo`, `GulperInfo`,
-`MesmeraldaInfo`) are moved onto the rental the shipped Greeble bots drive -
-`RentAWreck_Plane` / `_Car` / `_Boat` (`77878CD4` / `0C4E3BF4` / `47422C66`).
-A villain info left on its own hull (`GoldenQueen_Boat`, `DrKrankcase_Car`, ...)
-with a different figure under it is what came up as a corrupt racer and killed
-the disc; that state was live for one build and is now reverted.
+The twelve villain infos and the three `Greeble*Info` dummies were moved onto the
+rental (`RentAWreck_Plane` / `_Car` / `_Boat`, `77878CD4` / `0C4E3BF4` / `47422C66`)
+because a villain info left on its own hull with a different figure under it came
+up as a corrupt racer. That fixed the crash and broke the look: the action-pack
+enemy pools are *only* villain + Greeble records, so the whole grid drove the
+scrap rental - "every bot has the scrap/template/free vehicle".
 
-So "every sea bot drives the same boat" is not a bad patch: on the sea grid the
-rental (`RentAWreck_Boat`) is used by the four sea villain infos plus
-`GreebleBoatInfo` - five of the 22 spots - and the plot drivers keep the hulls
-the disc ships them with. Fifteen of the 71 spots sit on a rental in total
-(twelve villains + the three Greeble dummies).
-Giving the villains their own boats back is exactly the change that corrupts the
-race - it needs the villain's vehicle *object* and its driver pairing to survive a
-character swap, which the rental does not depend on.
+The engine's own symbols explain why, and why borrowing hulls cannot work either.
+`gamelogic.rso` has `IsDriverVehicleCorrectPair`, `GetVillainVehicle`,
+`GetVillainVehicleStat`, `ClearDriverVehicles` and `IsOnlyVehicleRentAWreck`: a
+record's figure and hull are one pair, validated when the racer is built. A record
+whose figure does not belong to the hull it names falls back to the free vehicle.
+So the earlier attempts - villains on the rental, then villains on borrowed driver
+hulls (all 20 driver hulls, still scrap in game) - were both the wrong end of the
+problem.
+
+`tools/pkz_racer_vehicles.py` fixes it the other way round:
+
+* the 12 villain records + 3 Greebles get their shipped `(character, template,
+  vehicle)` triple back, byte for byte, so their own hull is valid by definition;
+* the 60 `Driver*_AIInfo` records stay recast, because they keep their *own* hull
+  (`DriverPeacock` still drives the Peacock vehicle, whoever is under the helmet);
+* the pools' 10 `Greeble*` entries are re-pointed at a villain record the same pool
+  already references, so the dummies - the only remaining scrap drivers - are no
+  longer fielded at all. Same length, and every `RacerAIList` still mirrors its
+  `0x139C` id table.
+
+State of the tree in the image now (`BaseGameplay.pkz`, md5
+`49eedbb5b1a50c78010c4a7e67e0137e`): 75 racer records, **35 distinct hulls** (the
+same count the disc ships), **0 records on a rental**, **0 pool entries pointing
+at a Greeble**, every villain/Greeble triple identical to the shipped file, and
+the uniform bot speed still in place (1.18 / 1.20 / 1.22).
 
 ### The base that ships
 
 ```
-BaseGameplay.pkz vs pristine: 824 bytes, size identical
-  279 in the 71 character refs
-  327 in the wrapper 0x15,id tables (the same ids mirrored next to the object)
-  218 in the EnemyAIList_* / ActionPackPersonalityList pools and villain bodies
-  12 vehicle refs  -> terrain rental (villain infos only)
-racer slots 71 (25 land / 24 air / 22 sea); any roll gives 22-25 distinct
-characters per terrain with no character twice in one terrain
+BaseGameplay.pkz vs pristine: 704 bytes, size identical
+  219 in the racer character refs (56 driver records recast)
+  310 in the wrapper 0x15,id tables (the same ids mirrored next to the object)
+  115 in the EnemyAIList_* pools (Greeble dummy entries -> real villains)
+   60 in the AI personality speed floats (the uniform bot speed, see below)
+    0 in any vehicle or AI template ref - every record drives the hull it shipped
+racer slots 56 recastable drivers + 15 villain/Greeble records left as shipped
+(25 land / 24 air / 22 sea); any roll gives 22-25 distinct characters per
+terrain with no character twice in one terrain
 Common.pkz  pristine cup order (the launcher rolls the cups per play)
 image       wit verify: +OK; boots through the language select and loads
             Chompy Mountain Race (hint carousel / "Browse hints")
@@ -1103,3 +1122,91 @@ screen is the furthest this repo can verify on its own.
 
 Roll back state, should another build misbehave: `backups/BaseGameplay.pkz.working-randomcast`
 (this base) plus `backups/Common.pkz.pristine`.
+
+## Bot pace: one speed per difficulty, and where the number lives
+
+Asked for: "make all the bots as hard as you can without making it impossible,
+still easy/medium/hard - every bot needs the same speed, and the max speed
+depends on the difficulty".
+
+A racer's pace multiplier is the float at body+0x0C of its **`AIPersonality`**
+object (`0xC5EE3067`), and that object is what a `RacerAIInfo` names in its AI
+template field (`doff+32`). The disc ships it as a clean ladder - the value rises
+exactly with the tier's name, and every pacifist sits 0.05 above its attacker
+sibling (same speed, less appetite for attacking):
+
+| personality | +0x0C | | personality | +0x0C |
+|---|---|---|---|---|
+| `SlowAttackerPersonality` | 0.80 | | `GoodAttackerPersonality` | 1.00 |
+| `SlowPacifistPersonality` | 0.85 | | `GoodPacifistPersonality` | 1.05 |
+| `AverageAttackerPersonality` | 0.90 | | `ExpertAttackerPersonality` | 1.10 |
+| `AveragePacifistPersonality` | 0.95 | | `ExpertPacifistPersonality` | 1.15 |
+| | | | `MasterAttackerPersonality` | 1.20 |
+
+Three things make this the right knob, and one thing limits it:
+
+* **every `Driver*_*_AIInfo` (all 60) names `AverageAttackerPersonality`**
+  (`33D91E1A`), so the *racer* bots are all on the 0.90 rung - the field a race
+  actually puts on the track is uniform in data already, and that one rung is
+  what sets their speed.
+* the behaviour differences that make an opponent "easy" or "hard" are **not**
+  this float: the attacker/pacifist lean is `+0x4C/+0x50` (0.3/0.7 slow,
+  0.7/0.3 average, 1.0/0.0 master) and the two three-point curves at
+  `+0x60..+0x74` differ per tier. So raising the speed leaves the difficulty
+  *character* of each tier alone.
+* 1.20 is already on the disc and beatable - it is the AI its own villain records
+  use - so a band at 1.20 is not an invented, untested difficulty.
+* what is **not** in the data is the Easy/Medium/Hard split itself. `gamelogic.rso`
+  carries `kGameplayDifficulty_Easy/_Medium/_Hard`, `DifficultyMod`, `SetDifficulty`,
+  `GetDifficulty` and `uiPersonalityCRC`, i.e. the scaling of a chosen personality
+  by the selected difficulty is code, not an object we can rewrite. The three
+  bands below are therefore keyed on the *tier*, which is the only difficulty
+  ordering this container holds.
+
+`tools/pkz_ai_speed.py` flattens the ladder into three uniform bands, one speed
+each, and reads the band off a pristine copy of the file so a second pass is a
+no-op:
+
+| band | personalities that shipped there | +0x0C now |
+|---|---|---|
+| easy | Slow 0.80, SlowPacifist 0.85, Average 0.90, AveragePacifist 0.95 (+ the three sheep/action-pack twins) | **1.18** |
+| medium | Good 1.00, GoodPacifist 1.05, ActionPackExpert 1.00/1.05 | **1.20** |
+| hard | Expert 1.10, ExpertPacifist 1.15, Master 1.20 | **1.22** |
+
+The three values are 3.4 % apart on purpose: the shipped ladder spreads bots
+over 0.80-1.20 (a 50 % gap between the slowest and fastest opponent), and the
+point here is that every bot runs at the same speed with only the *ceiling* set
+by difficulty. What is left per tier is behaviour, which is what makes Easy easy:
+the pacifist lean (`+0x4C/+0x50`) and the two curves (`+0x60..+0x74`) are
+untouched, so Easy still fields bots that hang back and misfire while Hard's
+drive at the player.
+
+Against what shipped: the field the player meets is mostly the 0.90 rung (61 of
+the 75 `RacerAIInfo` records name `AverageAttackerPersonality`; the rest are
+good/expert/slow villain records), so +31 % for the bulk of it, +47 % for the
+slow-tier records, and the fastest tier only moves from 1.20 to 1.22 (+2 %).
+After the patch the 75 racer records sit at 1.18 (65 of them), 1.20 (6) and
+1.22 (4) - a 3.4 % window, i.e. one speed for practical purposes.
+
+Verified on the tree that is in the image now (`BaseGameplay.pkz`, md5
+`08e3bec15bf1ee1b3d7441b591cdd8c2`):
+
+* 20 `AIPersonality` objects found and all 20 rewritten; against the shipped file
+  that is **60 changed bytes** (15 of the 20 values actually move, 5 already sat
+  on their band's number), **0 bytes outside the `+0x0C` field**, file size
+  identical (10,164,932);
+* every personality ends up with exactly one of three values - 8 at 1.18,
+  7 at 1.20, 5 at 1.22 - so no bot is left on the old spread;
+* a second run changes **0 bytes** (bands are read from
+  `backups/BaseGameplay.pkz.pristine`, not from the file being patched);
+* `wit copy` + `wit verify` -> `+OK ... SKNE52`, and the `BaseGameplay.pkz`
+  extracted back out of `hotstreak-hub.wbfs` hashes to the same md5;
+* the launcher bake produces the same three values, so a session started from the
+  window and a `reroll.sh` bake agree.
+
+Not verified: how it *feels*. The change is 15 floats inside objects that already
+exist, so there is nothing structural to break, but whether 1.18 is "hard" or
+"unwinnable" is a judgement no boot test can make - retune with
+`python3 tools/pkz_ai_speed.py --easy 1.14 --medium 1.17 --hard 1.20` and repack
+if a band turns out to be too much. Roll back in one command by copying
+`backups/BaseGameplay.pkz.pristine` over the tree (that also drops the roster).

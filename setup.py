@@ -27,7 +27,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TREE = os.path.join(HERE, "disc")
 DATA = os.path.join(TREE, "files", "Data")
 BACKUPS = os.path.join(HERE, "backups")
-IMAGE = os.path.join(HERE, "skylanders-scr-mod.wbfs")
+IMAGE = os.path.join(HERE, "hotstreak-hub.wbfs")
 ART = os.path.join(HERE, "launcher", "assets", "art.json")
 TOYS = os.path.join(os.path.dirname(HERE), "skylanders-nfc-sim", "data")
 
@@ -92,7 +92,7 @@ def wit_flavour():
 def _download(url, dest):
     print("  downloading %s" % url)
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "scr-wii setup"})
+        req = urllib.request.Request(url, headers={"User-Agent": "hotstreak-hub setup"})
         with urllib.request.urlopen(req, timeout=60) as resp, open(dest, "wb") as out:
             total = int(resp.headers.get("Content-Length") or 0)
             got = 0
@@ -342,7 +342,7 @@ def image():
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Set this project up from your own copy of the disc.")
+        description="Hotstreak Hub - set this project up from your own copy of the disc.")
     ap.add_argument("iso", nargs="?", help="your Skylanders: SuperChargers Racing "
                                           "Wii image (.iso / .wbfs / .wia)")
     ap.add_argument("--force", action="store_true",

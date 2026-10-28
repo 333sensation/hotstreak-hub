@@ -20,7 +20,7 @@ echo "== rolling new cup tracks"
 python3 tools/pkz_cup_random.py "$@"
 
 echo "== repacking"
-"$WIT" copy disc skylanders-scr-mod.wbfs --overwrite >/dev/null
-"$WIT" verify skylanders-scr-mod.wbfs 2>&1 | tail -1
+"$WIT" copy disc hotstreak-hub.wbfs --overwrite >/dev/null
+"$WIT" verify hotstreak-hub.wbfs 2>&1 | tail -1
 
-echo "== done: $HERE/skylanders-scr-mod.wbfs"
+echo "== done: $HERE/hotstreak-hub.wbfs"

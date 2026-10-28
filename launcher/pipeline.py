@@ -7,7 +7,7 @@ roster is always written into a known-good copy of `BaseGameplay.pkz`
 wit - that is what makes the change visible to Dolphin and to a real Wii.
 
 Per boot: patch the pkz in the extracted tree -> `wit copy` the tree over
-`skylanders-scr-mod.wbfs` (~10 s) -> start Dolphin on the image. `export()`
+`hotstreak-hub.wbfs` (~10 s) -> start Dolphin on the image. `export()`
 writes the same patched image into the layout a USB loader expects, which is the
 path for real hardware.
 """
@@ -22,13 +22,16 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
-IMAGE = os.path.join(ROOT, "skylanders-scr-mod.wbfs")
+IMAGE = os.path.join(ROOT, "hotstreak-hub.wbfs")
 TREE = os.path.join(ROOT, "disc")
 GAMEPLAY = os.path.join(TREE, "files", "Data", "BaseGameplay.pkz")
 COMMON = os.path.join(TREE, "files", "Data", "Common.pkz")
 BASE_PKZ = os.path.join(ROOT, "backups", "BaseGameplay.pkz.working-randomcast")
+PRISTINE_PKZ = os.path.join(ROOT, "backups", "BaseGameplay.pkz.pristine")
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import pkz_cup_random as CUPS   # noqa: E402  (needs the tools/ path above)
+import pkz_ai_speed as SPEED     # noqa: E402  (same)
+import pkz_racer_vehicles as HULLS  # noqa: E402  (same)
 import platforms as PF
 
 WIT = PF.wit()      # resolved again at build time (WIT env var may change)
@@ -92,7 +95,9 @@ class Session:
         self.figures = self.data["figures"]
         self.by_display = {f["display"]: f for f in self.figures}
         self.gameplay = open(BASE_PKZ, "rb").read()
-        self.slots = R.slots(self.gameplay)
+        # only the driver records are recast: a villain record's figure and hull
+        # are one pair (the engine checks it), so those 15 stay as they shipped
+        self.slots = [s for s in R.slots(self.gameplay) if s.get("kind") == "driver"]
         self.pins = []
         self.assign = {}
         self.roll()
@@ -142,6 +147,14 @@ class Session:
 
     def patched_bytes(self):
         out, changed = self.R.apply(self.gameplay, self.slots, self.assign)
+        # every build also carries the uniform bot pace (tools/pkz_ai_speed.py),
+        # so a launcher session and a reroll.sh bake produce the same bots
+        out, _bands = SPEED.apply(out, ref=self.gameplay)
+        # keep every record on the figure+hull pair the disc shipped, and field
+        # real villains instead of the scrap-driving Greeble dummies
+        shipped = open(PRISTINE_PKZ, "rb").read() if os.path.exists(PRISTINE_PKZ) else out
+        out, _pairs = HULLS.apply(out, shipped)
+        out, _greebles = HULLS.drop_greebles(out, shipped)
         if len(out) != len(self.gameplay):
             raise RuntimeError("patch changed the pkz size - refusing")
         return out, changed
