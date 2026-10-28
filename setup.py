@@ -5,8 +5,13 @@
     python3 setup.py game.iso         # do the whole setup from a disc image
     python3 setup.py --auto           # the guided setup, no questions asked
     python3 setup.py --check          # only report what this machine is missing
+    python3 setup.py --verify-rip     # only check your game file, change nothing
     python3 setup.py --fetch-wit      # only fetch Wiimms ISO Tool into tools/wit/
     python3 setup.py --force          # redo the steps even if they are there
+
+The guided setup opens your game file with `wit` and checks it *before* it
+unpacks anything (right game, right region, whole dump), so a half-finished
+download or another region says so in one line instead of failing a minute later.
 
 The one download is Wiimms ISO Tool (the only thing that can unpack and repack a
 Wii image); it lands in `tools/wit/`, which is git-ignored and found again on the
@@ -326,7 +331,7 @@ def find_images():
     return found
 
 
-def ask_for_image():
+def ask_for_image(announce=True):
     """Pick a game file: the obvious one if there is one, a numbered list if not."""
     cands = find_images()
     if not cands:
@@ -334,7 +339,8 @@ def ask_for_image():
     best = cands[0]
     clear_winner = len(cands) == 1 or best[0] > cands[1][0]
     if clear_winner:
-        print("  found it: %s  (%.1f GB)" % (best[2], best[1] / 1e9))
+        if announce:
+            print("  found it: %s  (%.1f GB)" % (best[2], best[1] / 1e9))
         return best[2]
     print("  I found %d game files:" % len(cands))
     for i, (_score, size, path) in enumerate(cands[:8], 1):
@@ -367,6 +373,164 @@ def verify_image(path=None):
               or next((ln for ln in lines if "SKNE52" in ln), None)
               or (lines[-1] if lines else "no output from wit"))
     return good, detail
+
+
+# -------------------------------------------------- checking your own game file
+# `wit id` reads the six bytes at the start of a Wii disc: three letters for the
+# game, the fourth for the region. That alone separates "a Wii game" from "a Wii
+# game that is not this one"; `wit verify` then reads every block, and
+# `wit files` (which only reads the file table) confirms the containers this mod
+# edits are in there. No unpacking, nothing written.
+GAME_CODE = "SKN"
+GAME_TITLE = "Skylanders: SuperChargers Racing"
+GAME_ID = "SKNE52"                 # the release this mod was built from
+REGIONS = {"E": "USA", "P": "Europe", "J": "Japan", "K": "Korea"}
+MOD_FILES = ("files/Data/BaseGameplay.pkz", "files/Data/BaseSkylander.pkz",
+             "files/Data/Common.pkz")
+
+
+def wit_id(wit, path):
+    """The disc's six-byte game id, or None if wit cannot read the header."""
+    proc = subprocess.run([wit, "id", path], capture_output=True, text=True,
+                          timeout=300)
+    for line in ((proc.stdout or "") + (proc.stderr or "")).splitlines():
+        token = line.strip()
+        if len(token) == 6 and token.isalnum() and token == token.upper():
+            return token
+    return None
+
+
+def wit_files(wit, path):
+    """Every file name inside the disc, straight out of its file table."""
+    proc = subprocess.run([wit, "files", path], capture_output=True, text=True,
+                          timeout=600)
+    out = set()
+    for line in (proc.stdout or "").splitlines():
+        name = line.strip()
+        while name.startswith("./"):
+            name = name[2:]
+        if name:
+            out.add(name)
+    return out
+
+
+def check_rip(wit, path):
+    """Look at one game file and judge it.
+
+    Returns (verdict, [(whether it is good news, one line)], what to name in the
+    failure case). verdict is one of: missing, not-wii, other-game, other-region,
+    damaged, incomplete, good.
+    """
+    notes = []
+    if not (path and os.path.isfile(path)):
+        return "missing", notes, path
+    ident = wit_id(wit, path)
+    if not ident:
+        return "not-wii", notes, None
+    notes.append((True, "it is a Wii disc"))
+    region = REGIONS.get(ident[3], "region %s" % ident[3])
+    if ident[:3] != GAME_CODE:
+        return "other-game", notes, ident
+    if ident[3] != GAME_ID[3]:
+        notes.append((True, "%s (%s)" % (GAME_TITLE, region)))
+        return "other-region", notes, ident
+    notes.append((True, "%s (%s)" % (GAME_TITLE, region)))
+
+    proc = subprocess.run([wit, "verify", path], capture_output=True, text=True,
+                          timeout=3600)
+    text = (proc.stdout or "") + (proc.stderr or "")
+    if proc.returncode != 0 or "+OK" not in text:
+        complaint = next((ln.strip().lstrip("!").strip() for ln in text.splitlines()
+                          if ln.strip().startswith("!!") and "ERROR #" not in ln), "")
+        return "damaged", notes, complaint or "wit stopped reading it"
+    notes.append((True, "every block reads back without errors"))
+
+    listed = wit_files(wit, path)
+    gone = [os.path.basename(f) for f in MOD_FILES if f not in listed]
+    if gone:
+        notes.append((False, "%s %s missing from it"
+                      % (" and ".join(gone), "are" if len(gone) > 1 else "is")))
+        return "incomplete", notes, gone
+    notes.append((True, "the three containers this mod edits are in it"))
+    return "good", notes, ident
+
+
+def verify_rip(path=None, guided=False):
+    """Check the user's own game file and say, in plain words, what it is.
+
+    `guided` is the setup's step 3: it already printed where it found the file,
+    so that run only reports the findings, without the closing "you can start
+    now" - the setup has four more steps to go before that is true.
+    """
+    print("Checking your game file")
+    wit = ensure_wit()
+    if not wit:
+        print("  I need wit to open game files, and it is not here.")
+        print("  Run: python3 setup.py --fetch-wit")
+        return False
+    path = path or ask_for_image(announce=False)
+    if not path:
+        print("  I could not find a game file to check.")
+        print("  Point me at yours:\n"
+              "    python3 setup.py --verify-rip /path/to/your/game.iso")
+        return False
+    if not os.path.isfile(path):
+        print("  There is no file at %s" % path)
+        return False
+    if not guided:
+        print("  file   %s" % path)
+        print("  size   %.2f GB" % (os.path.getsize(path) / 1e9))
+    print("  reading it - about ten seconds for a full disc")
+    sys.stdout.flush()
+
+    verdict, notes, detail = check_rip(wit, path)
+    for good, line in notes:
+        ok(line) if good else todo(line)
+    print()
+
+    if verdict == "good":
+        if not guided:
+            print("GOOD - your game file is exactly what this mod needs (id %s)."
+                  % detail)
+            print("Nothing was changed and nothing needs fixing.")
+            print("Double-click \"Start Hotstreak Hub\" and press PLAY.")
+        return True
+
+    if verdict == "missing":
+        print("  I cannot check a file that is not there.\n"
+              "  Full instructions: RIP-GUIDE.md")
+    elif verdict == "not-wii":
+        print("  That file is not a Wii game.\n"
+              "  Either it is still downloading, or it is not a disc image.\n"
+              "  A working file is named .iso, .wbfs or .wia and is about "
+              "1.6 GB or more.")
+        print("  How to make one from your own disc: RIP-GUIDE.md")
+    elif verdict == "other-game":
+        print("  That is a different game (id %s)." % detail)
+        print("  This mod only works with %s for the Wii." % GAME_TITLE)
+        print("  How to make the right file: RIP-GUIDE.md")
+    elif verdict == "other-region":
+        adjective = {"E": "American", "P": "European", "J": "Japanese",
+                     "K": "Korean"}.get(detail[3], REGIONS.get(detail[3], "other-region"))
+        print("  Right game, wrong region: that is the %s disc (%s)."
+              % (adjective, detail))
+        print("  This mod was built from the %s release (%s). The containers have "
+              "the same names in every region but do not hold the same bytes, so "
+              "patching another region gives you a disc that will not boot."
+              % (REGIONS[GAME_ID[3]], GAME_ID))
+        print("  RIP-GUIDE.md says which disc you need.")
+    elif verdict == "damaged":
+        print("  The file is incomplete or damaged: it stops partway through.")
+        if detail:
+            print("  (what wit said: %s)" % detail)
+        print("  Dump the disc again (or let the download finish), then run this "
+              "again.")
+    elif verdict == "incomplete":
+        print("  The file opens, but files are missing from inside it.")
+        print("  That happens when a rip leaves parts out. Copy the whole disc "
+              "again - RIP-GUIDE.md.")
+    print("\n  Nothing was changed on your computer.")
+    return False
 
 
 # set by main(); --no-fetch turns the wit download off
@@ -571,6 +735,9 @@ def auto(force=False):
                 print("\n  No game file yet - that is the one part you have to bring.")
                 print("  Full instructions: START-HERE.md")
                 return False
+        if not verify_rip(iso, guided=True):
+            print("\n  Nothing was unpacked - fix the file above and run this again.")
+            return False
         if not extract(iso):
             return False
 
@@ -633,6 +800,9 @@ def main():
     ap.add_argument("--force", action="store_true",
                     help="rebuild the image and the artwork even if they exist")
     ap.add_argument("--check", action="store_true", help="only report, change nothing")
+    ap.add_argument("--verify-rip", action="store_true",
+                    help="only check your game file: right game, right region, "
+                         "whole dump - change nothing")
     ap.add_argument("--fetch-wit", action="store_true",
                     help="only fetch Wiimms ISO Tool into tools/wit/")
     ap.add_argument("--no-fetch", action="store_true",
@@ -650,6 +820,9 @@ def main():
     if args.fetch_wit:
         print("Wiimms ISO Tool %s" % WIT_VERSION)
         return 0 if fetch_wit() else 1
+
+    if args.verify_rip:
+        return 0 if verify_rip(args.iso) else 1
 
     if args.auto or (not args.iso and not args.check and not ready()):
         return 0 if auto(force=args.force) else 1

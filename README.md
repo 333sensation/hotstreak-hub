@@ -6,6 +6,12 @@ Roster mod + launcher for **Skylanders: SuperChargers Racing** (Wii, `SKNE52`).
 steps; [`START-HERE.md`](START-HERE.md) is the one-page version. You need Python
 and your own copy of the game — nothing else.
 
+| guide | for |
+|---|---|
+| [`START-HERE.md`](START-HERE.md) | the four steps, from nothing to racing |
+| [`RIP-GUIDE.md`](RIP-GUIDE.md) | how to make your own game file out of a disc you own |
+| [`MOD-GUIDE.md`](MOD-GUIDE.md) | what the mod changes, every button, how to undo it |
+
 ![Skylanders: SuperChargers Racing](docs/banner.png)
 
 Tooling and a desktop launcher for modding **Skylanders: SuperChargers Racing**
@@ -129,6 +135,7 @@ bottom.
 
 ```sh
 python3 setup.py --check                 # what is still missing on this machine
+python3 setup.py --verify-rip            # is my game file the right one, and whole?
 python3 setup.py /path/to/your/game.iso  # unpack, make the baselines, build the image
 ./run.sh                                 # Windows: run.cmd
 ```
@@ -147,6 +154,14 @@ It takes a `.iso`, `.wbfs` or `.wia`. Without a path it looks in this folder, it
 parent, `Downloads`, `Desktop`, `Documents`, your home folder and any mounted
 disk or SD card, and only considers files between 100 MB and 9 GB that are named
 like this game.
+
+Before it unpacks anything, the guided setup checks the file it found with
+`wit`: the game id in the disc header (`SKNE52` is this game's American release,
+the European one has `P` in the fourth letter), `wit verify` for a dump that
+reads end to end, and the disc's file table for the three containers the mod
+edits. `python3 setup.py --verify-rip [game.iso]` runs that check on its own and
+changes nothing. [`RIP-GUIDE.md`](RIP-GUIDE.md) is how to make such a file from a
+disc you own.
 
 `wit` is the one thing setup downloads: if it is not on `PATH`, in `tools/wit/`
 or in a `DolRecomp` checkout next to this folder, the official build
@@ -171,7 +186,9 @@ the portal picker is empty.
 | `Pillow is missing` | `python3 -m pip install -r requirements.txt` |
 | `wit NOT FOUND` | install Wiimms ISO Tool, put `wit` on `PATH`, or `WIT=/path/to/wit` |
 | `I could not find it by myself` | drop your game file anywhere in this folder and double-click the starter again, or drag the file into the window when it asks |
-| `That file did not open as a Wii game` | it is still downloading, or it is not a Wii dump; a good one is `.iso` / `.wbfs` / `.wia` and about 1.6 GB |
+| `That file did not open as a Wii game` | it is still downloading, or it is not a Wii dump; a good one is `.iso` / `.wbfs` / `.wia` and about 1.6 GB ([`RIP-GUIDE.md`](RIP-GUIDE.md)) |
+| `Right game, wrong region` | you have the European or Japanese disc; this mod was built from the American `SKNE52` |
+| `The file is incomplete or damaged` | the copy was interrupted; dump or download it again (`--verify-rip` says which part failed) |
 | the window opens but PLAY does nothing | run `python3 setup.py --check` — it names the missing piece |
 | no picture in Dolphin on macOS | Dolphin's Metal backend cannot build this disc's vertex pipelines; `play-mod.sh` and the launcher force the OpenGL backend instead |
 | the portal picker is empty | the toy library (`../skylanders-nfc-sim/data`) is not next to this folder — optional, only that picker needs it |
@@ -279,6 +296,8 @@ tools/        the pkz readers/writers (see below)
 docs/         banner.png + roster.png + promo.gif, composed from the disc's own art
 promo/        promo.mp4 and how it was made
 START-HERE.md four steps, for someone who just wants to play
+RIP-GUIDE.md  how to dump your own disc into the file the setup wants
+MOD-GUIDE.md  what the mod changes, the buttons, and how to undo it
 FINDINGS.md   what the engine does, with the evidence
 reroll.sh     roll a cast and repack
 cups.sh       roll the cup line-ups and repack
