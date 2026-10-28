@@ -2,6 +2,10 @@
 
 Roster mod + launcher for **Skylanders: SuperChargers Racing** (Wii, `SKNE52`).
 
+**Just want to play?** Double-click `Start Hotstreak Hub` and follow the five
+steps; [`START-HERE.md`](START-HERE.md) is the one-page version. You need Python
+and your own copy of the game — nothing else.
+
 ![Skylanders: SuperChargers Racing](docs/banner.png)
 
 Tooling and a desktop launcher for modding **Skylanders: SuperChargers Racing**
@@ -98,12 +102,30 @@ and the promo clip. **Not** committed (see `.gitignore`): the extracted disc
 with — all of that is extracted from a disc you own. The composed files in `docs/`
 and `promo/` are the exception, so the README can show what the mod looks like.
 
+**There is no game download.** Not here and not in a sister repo: the disc image,
+the `.pkz` files and the extracted artwork are Nintendo's and Activision's
+copyright, so redistributing them would just be piracy with extra steps (and a
+DMCA takedown). What this project distributes is the *change* — a few hundred
+bytes of same-size edits in containers you already own — and the tools that apply
+it to your own rip in about five minutes. That is the whole trick, and it is why
+`Start Hotstreak Hub` asks for one file and then does everything else itself.
+
 ## Setup
 
-You need: Python 3.9+ with tkinter, `pip install -r requirements.txt` (Pillow),
-Dolphin to play, and [Wiimms ISO Tool](https://wit.wiimm.de/) (`wit`) to
-unpack/repack the image. Nothing else is downloaded for you, and **you need your
-own copy of the disc**.
+**The short version: double-click `Start Hotstreak Hub`** (`Start Hotstreak Hub.command`
+on macOS, `Start Hotstreak Hub.bat` on Windows, `./run.sh` on Linux). The first
+run installs the two small Python extras, downloads `wit`, finds your game file
+wherever it is, builds the ready-to-play image, checks it, and opens the
+launcher. Five numbered steps, no paths to type, no admin password. That is the
+whole install.
+
+You bring two things: **Python 3.9+** (from python.org, with the *tcl/tk* box
+ticked) and **your own copy of the disc** as a file (`.iso`, `.wbfs` or `.wia`).
+Dolphin is only needed to play. [`START-HERE.md`](START-HERE.md) is the same
+instructions with the pictures-of-words version, and the failure table at the
+bottom.
+
+### The manual route
 
 ```sh
 python3 setup.py --check                 # what is still missing on this machine
@@ -111,14 +133,20 @@ python3 setup.py /path/to/your/game.iso  # unpack, make the baselines, build the
 ./run.sh                                 # Windows: run.cmd
 ```
 
+Bare `python3 setup.py` (or `--auto`) runs that same guided setup, and takes an
+optional path if you would rather name the file yourself.
+
 `setup.py` is the whole install: it finds `wit` and Dolphin, unpacks the image
 into `disc/`, copies the four pristine `.pkz` baselines the patcher works from
 into `backups/`, pulls the game's own portraits/minimaps out of the disc for the
-window, and repacks `hotstreak-hub.wbfs`. Re-running it is safe — it only
-does the steps that are missing, and `--force` rebuilds the image and the
-artwork.
+window, and repacks `hotstreak-hub.wbfs` and verifies it (`+OK … SKNE52`).
+Re-running it is safe — it only does the steps that are missing, and `--force`
+rebuilds the image and the artwork.
 
-It takes a `.iso`, `.wbfs` or `.wia`.
+It takes a `.iso`, `.wbfs` or `.wia`. Without a path it looks in this folder, its
+parent, `Downloads`, `Desktop`, `Documents`, your home folder and any mounted
+disk or SD card, and only considers files between 100 MB and 9 GB that are named
+like this game.
 
 `wit` is the one thing setup downloads: if it is not on `PATH`, in `tools/wit/`
 or in a `DolRecomp` checkout next to this folder, the official build
@@ -142,7 +170,8 @@ the portal picker is empty.
 | `tkinter is missing` | Debian/Ubuntu `sudo apt install python3-tk`, Fedora `sudo dnf install python3-tkinter`, Windows: reinstall Python from python.org with **tcl/tk** ticked |
 | `Pillow is missing` | `python3 -m pip install -r requirements.txt` |
 | `wit NOT FOUND` | install Wiimms ISO Tool, put `wit` on `PATH`, or `WIT=/path/to/wit` |
-| `no such disc image` | `setup.py` wants the image file itself, not a folder; `.iso`, `.wbfs` and `.wia` all work |
+| `I could not find it by myself` | drop your game file anywhere in this folder and double-click the starter again, or drag the file into the window when it asks |
+| `That file did not open as a Wii game` | it is still downloading, or it is not a Wii dump; a good one is `.iso` / `.wbfs` / `.wia` and about 1.6 GB |
 | the window opens but PLAY does nothing | run `python3 setup.py --check` — it names the missing piece |
 | no picture in Dolphin on macOS | Dolphin's Metal backend cannot build this disc's vertex pipelines; `play-mod.sh` and the launcher force the OpenGL backend instead |
 | the portal picker is empty | the toy library (`../skylanders-nfc-sim/data`) is not next to this folder — optional, only that picker needs it |
@@ -235,7 +264,9 @@ $WIT copy disc hotstreak-hub.wbfs --overwrite
 ## Layout
 
 ```
-setup.py      one-command install: unpack, baselines, artwork, image
+Start Hotstreak Hub.command / .bat    double-click: deps, setup, launcher
+start.py      what those two run
+setup.py      one-command install: unpack, baselines, artwork, image, verify
 run.sh        start the launcher (run.cmd on Windows)
 launcher/     the window: session roll, patch, repack, launch, netplay, export
   roster.py       the 56 recastable driver slots out of BaseGameplay.pkz
@@ -247,6 +278,7 @@ launcher/     the window: session roll, patch, repack, launch, netplay, export
 tools/        the pkz readers/writers (see below)
 docs/         banner.png + roster.png + promo.gif, composed from the disc's own art
 promo/        promo.mp4 and how it was made
+START-HERE.md four steps, for someone who just wants to play
 FINDINGS.md   what the engine does, with the evidence
 reroll.sh     roll a cast and repack
 cups.sh       roll the cup line-ups and repack

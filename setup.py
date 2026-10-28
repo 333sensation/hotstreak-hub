@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """One-command setup: fetch wit, unpack your disc, make the baselines, build the image.
 
-    python3 setup.py                  # report what this machine is missing
+    python3 setup.py                  # guided setup - finds your game file itself
     python3 setup.py game.iso         # do the whole setup from a disc image
+    python3 setup.py --auto           # the guided setup, no questions asked
+    python3 setup.py --check          # only report what this machine is missing
     python3 setup.py --fetch-wit      # only fetch Wiimms ISO Tool into tools/wit/
     python3 setup.py --force          # redo the steps even if they are there
 
 The one download is Wiimms ISO Tool (the only thing that can unpack and repack a
 Wii image); it lands in `tools/wit/`, which is git-ignored and found again on the
 next run. You still need your own copy of the disc and Dolphin - neither is
-downloaded here. Everything it writes stays in this folder.
+downloaded here, and this project never ships the game itself. Everything it
+writes stays in this folder.
 """
 import argparse
 import os
@@ -62,10 +65,19 @@ def todo(msg):
     print("  TO DO   %s" % msg)
 
 
-def run(cmd):
+def run(cmd, quiet=False):
+    """Run a step. quiet=True keeps the tool's chatter for the failure case only."""
     print("  $ %s" % " ".join(cmd))
-    proc = subprocess.run(cmd)
-    return proc.returncode == 0
+    sys.stdout.flush()
+    if quiet:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            tail = [ln for ln in ((proc.stdout or "") + (proc.stderr or "")).splitlines()
+                    if ln.strip()][-6:]
+            if tail:
+                print("\n".join("  " + ln for ln in tail))
+        return proc.returncode == 0
+    return subprocess.run(cmd).returncode == 0
 
 
 def is_64bit():
@@ -217,6 +229,146 @@ def have(module):
         return False
 
 
+# --------------------------------------------------- finding the game yourself
+# A ten-year-old should not have to type a path. These are the places a Wii dump
+# actually ends up: next to this folder, in the usual home folders, and on a
+# mounted external disk or SD card.
+IMAGE_SUFFIXES = (".iso", ".wbfs", ".wia")
+GAME_WORDS = ("skylander", "supercharger", "super charger", "super_chargers",
+              "skne", "racing")
+MIN_IMAGE = 100 * 1000 * 1000          # smaller than this is not a game disc
+MAX_IMAGE = 9 * 1000 * 1000 * 1000     # a dual-layer Wii disc is 8.5 GB
+
+
+def _subdirs(path, depth=1):
+    """Directories under `path`, `depth` levels deep, skipping hidden ones."""
+    try:
+        entries = sorted(os.listdir(path))
+    except OSError:
+        return
+    for name in entries:
+        if name.startswith("."):
+            continue
+        full = os.path.join(path, name)
+        if not os.path.isdir(full):
+            continue
+        yield full
+        if depth > 1:
+            for sub in _subdirs(full, depth - 1):
+                yield sub
+
+
+def search_places():
+    """Folders worth looking in, most likely first."""
+    home = os.path.expanduser("~")
+    places = [HERE, os.path.dirname(HERE), os.getcwd(),
+              os.path.join(home, "Downloads"),
+              os.path.join(home, "Desktop"),
+              os.path.join(home, "Documents"),
+              home]
+    if platform.system() == "Darwin":
+        places += [os.path.join("/Volumes", d) for d in _names("/Volumes")]
+    elif platform.system() == "Linux":
+        for root in ("/media", "/run/media", "/mnt"):
+            places += [os.path.join(root, d) for d in _names(root)]
+            for user in _names(root):
+                places += [os.path.join(root, user, d)
+                           for d in _names(os.path.join(root, user))]
+    out, seen = [], set()
+    for p in places:
+        real = os.path.realpath(p)
+        if os.path.isdir(real) and real not in seen:
+            seen.add(real)
+            out.append(real)
+    return out
+
+
+def _names(path):
+    try:
+        return [n for n in sorted(os.listdir(path)) if not n.startswith(".")]
+    except OSError:
+        return []
+
+
+def find_images():
+    """Game images that look like this game, best guess first.
+
+    Whole-disc dumps are large, so this is a stat call per file, not a read: a
+    folder of a few hundred ROMs costs nothing. Folders reached twice are folded
+    together by real path, and files whose name says nothing about this game are
+    dropped as long as at least one name does.
+    """
+    found, seen = [], set()
+    for place in search_places():
+        for folder in [place] + list(_subdirs(place, depth=2)):
+            if folder == TREE or folder.startswith(TREE + os.sep):
+                continue                      # our own unpacked tree
+            for name in _names(folder):
+                low = name.lower()
+                if not low.endswith(IMAGE_SUFFIXES):
+                    continue
+                path = os.path.join(folder, name)
+                real = os.path.realpath(path)
+                if real in seen or os.path.basename(path) == os.path.basename(IMAGE):
+                    continue                  # same file twice, or our own build
+                try:
+                    size = os.path.getsize(path)
+                except OSError:
+                    continue
+                if not MIN_IMAGE < size < MAX_IMAGE:
+                    continue
+                seen.add(real)
+                score = sum(1 for w in GAME_WORDS if w in low)
+                found.append((score, size, real))
+    if any(score for score, _s, _p in found):
+        found = [f for f in found if f[0]]      # drop the ones with no hint in the name
+    found.sort(key=lambda t: (-t[0], -t[1], t[2]))
+    return found
+
+
+def ask_for_image():
+    """Pick a game file: the obvious one if there is one, a numbered list if not."""
+    cands = find_images()
+    if not cands:
+        return None
+    best = cands[0]
+    clear_winner = len(cands) == 1 or best[0] > cands[1][0]
+    if clear_winner:
+        print("  found it: %s  (%.1f GB)" % (best[2], best[1] / 1e9))
+        return best[2]
+    print("  I found %d game files:" % len(cands))
+    for i, (_score, size, path) in enumerate(cands[:8], 1):
+        print("    %d. %s  (%.1f GB)" % (i, path, size / 1e9))
+    try:
+        answer = input("  Which one? Type its number and press Enter: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return None
+    if answer.isdigit() and 1 <= int(answer) <= min(len(cands), 8):
+        return cands[int(answer) - 1][2]
+    print("  not a number from the list - no problem, nothing was changed")
+    return None
+
+
+def verify_image(path=None):
+    """Run wit's own check on the built file. Returns (ok, the line it printed)."""
+    path = path or IMAGE
+    if not os.path.exists(path):
+        return False, "no game file was built"
+    wit = ensure_wit()
+    if not wit:
+        return False, "wit is missing"
+    proc = subprocess.run([wit, "verify", path], capture_output=True, text=True)
+    text = (proc.stdout or "") + (proc.stderr or "")
+    lines = [ln.strip() for ln in text.replace("\r", "\n").splitlines() if ln.strip()]
+    good = any("+OK" in ln for ln in lines) and any("SKNE52" in ln for ln in lines)
+    detail = (next((ln for ln in lines if "+OK" in ln and "SKNE52" in ln), None)
+              or next((ln for ln in lines if "+OK" in ln), None)
+              or next((ln for ln in lines if "SKNE52" in ln), None)
+              or (lines[-1] if lines else "no output from wit"))
+    return good, detail
+
+
 # set by main(); --no-fetch turns the wit download off
 no_fetch = False
 
@@ -283,7 +435,7 @@ def report():
 def extract(iso):
     wit = ensure_wit()
     if not wit:
-        print("wit is missing and could not be fetched - install Wiimms ISO Tool "
+        print("  wit is missing and could not be fetched - install Wiimms ISO Tool "
               "from https://wit.wiimm.de/ and set WIT=/path/to/wit")
         return False
     if os.path.exists(os.path.join(DATA, "BaseGameplay.pkz")):
@@ -291,13 +443,19 @@ def extract(iso):
         ok("disc tree")
         return True
     if not os.path.isfile(iso):
-        print("  no such disc image: %s" % iso)
+        print("  There is no file at %s" % iso)
         return False
-    if not run([wit, "extract", iso, TREE]):
-        print("  wit extract failed - is that a GameCube/Wii image?")
+    print("  opening %s" % os.path.basename(iso))
+    sys.stdout.flush()
+    if not run([wit, "extract", iso, TREE], quiet=True):
+        print("\n  That file did not open as a Wii game.")
+        print("  Either it is still downloading, or it is not a Wii disc dump.")
+        print("  A working file is named .iso, .wbfs or .wia and is about "
+              "1.6 GB or more.")
         return False
     if not os.path.exists(os.path.join(DATA, "BaseGameplay.pkz")):
-        print("  %s was unpacked but has no files/Data/BaseGameplay.pkz" % TREE)
+        print("  %s opened, but it is not Skylanders: SuperChargers Racing." % TREE)
+        print("  This mod only works with that one game (Wii, SKNE52).")
         return False
     ok("disc tree")
     return True
@@ -340,11 +498,138 @@ def image():
     return run([wit, "copy", TREE, IMAGE])
 
 
+# ------------------------------------------------------------- guided setup
+TOTAL_STEPS = 5
+
+
+def step(n, what):
+    print("\n[%d/%d] %s" % (n, TOTAL_STEPS, what))
+    sys.stdout.flush()
+
+
+def ready():
+    """Everything that matters is in place."""
+    return (os.path.exists(os.path.join(DATA, "BaseGameplay.pkz"))
+            and os.path.exists(IMAGE))
+
+
+def auto(force=False):
+    """The whole setup, in five steps, asking nothing if it can help it.
+
+    This is what the double-click starter runs: find the game, open it, build the
+    ready-to-play file, check it, say it is ready.
+    """
+    print("Hotstreak Hub - setup")
+    print("=" * 20)
+
+    step(1, "Checking this computer")
+    if sys.version_info < (3, 9):
+        print("  Python %s is too old. Install Python 3.9 or newer from "
+              "https://www.python.org/downloads/" % sys.version.split()[0])
+        return False
+    ok("Python %s" % sys.version.split()[0])
+    if not have("tkinter"):
+        print("  Python is here but its window kit (tkinter) is not.")
+        print("  Windows/macOS: reinstall Python from python.org, keeping the "
+              "\"tcl/tk\" box ticked.")
+        print("  Debian/Ubuntu: sudo apt install python3-tk   Fedora: sudo dnf "
+              "install python3-tkinter")
+        return False
+    ok("the window kit")
+    if not have("PIL"):
+        print("  One small extra is missing; installing it now (no admin needed).")
+        if not install_pillow():
+            return False
+    ok("Pillow %s" % __import__("PIL").__version__)
+
+    step(2, "Getting the tool that opens Wii game files")
+    wit = ensure_wit()
+    if not wit:
+        print("  I could not download it.")
+        print("  Check your internet, then run this again - or install Wiimms ISO "
+              "Tool by hand from https://wit.wiimm.de/ and set WIT=/path/to/wit")
+        return False
+    ok("ready")
+
+    step(3, "Finding your game")
+    iso = None
+    if os.path.exists(os.path.join(DATA, "BaseGameplay.pkz")):
+        ok("already opened - nothing to do")
+    else:
+        iso = ask_for_image()
+        if not iso:
+            print("  I could not find it by myself.")
+            print("  Drop your game file into this folder (%s) and run this again," % HERE)
+            print("  or drag the file into this window and press Enter:")
+            try:
+                typed = input("  game file: ").strip().strip("'\"")
+            except (EOFError, KeyboardInterrupt):
+                typed = ""
+            if typed and os.path.isfile(typed):
+                iso = typed
+            else:
+                print("\n  No game file yet - that is the one part you have to bring.")
+                print("  Full instructions: START-HERE.md")
+                return False
+        if not extract(iso):
+            return False
+
+    step(4, "Preparing the game (about a minute)")
+    baselines()
+    if force and os.path.exists(ART):
+        os.remove(ART)
+    art()
+
+    step(5, "Building the ready-to-play file (a few minutes, about 1.5 GB)")
+    if force and os.path.exists(IMAGE):
+        os.remove(IMAGE)
+    if not image():
+        print("  The build did not finish. Run this again - it picks up where it "
+              "stopped.")
+        return False
+    good, detail = verify_image()
+    if good:
+        ok("checked: %s" % detail)
+    else:
+        print("  The file was built but the check said: %s" % detail)
+        print("  Run this again; if it repeats, delete %s and run it once more."
+              % os.path.basename(IMAGE))
+        return False
+
+    print("\n" + "=" * 20)
+    print("ALL DONE. Double-click \"Start Hotstreak Hub\" and press PLAY.")
+    if not (PF.dolphin() if PF else None):
+        print("\nOne more thing: Dolphin (the program that plays it) is not "
+              "installed yet.\nGet it from https://dolphin-emu.org/download/ - "
+              "then start this again.")
+    return True
+
+
+def install_pillow():
+    """pip install --user pillow, trying the variants that fresh machines need."""
+    attempts = [[sys.executable, "-m", "pip", "install", "--user", "--upgrade",
+                 "pillow"],
+                [sys.executable, "-m", "pip", "install", "--user",
+                 "--break-system-packages", "--upgrade", "pillow"]]
+    for cmd in attempts:
+        print("  $ %s" % " ".join(cmd[1:]))
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode == 0 and have("PIL"):
+            return True
+        if "externally-managed-environment" not in (proc.stdout + proc.stderr):
+            break
+    print("  That did not work. Paste this in a terminal, then run this again:")
+    print("    %s -m pip install --user pillow" % sys.executable)
+    return False
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Hotstreak Hub - set this project up from your own copy of the disc.")
     ap.add_argument("iso", nargs="?", help="your Skylanders: SuperChargers Racing "
                                           "Wii image (.iso / .wbfs / .wia)")
+    ap.add_argument("--auto", action="store_true",
+                    help="guided setup: find the game file yourself and build the image")
     ap.add_argument("--force", action="store_true",
                     help="rebuild the image and the artwork even if they exist")
     ap.add_argument("--check", action="store_true", help="only report, change nothing")
@@ -354,6 +639,11 @@ def main():
                     help="never download wit; use an installed one")
     args = ap.parse_args()
 
+    try:                                  # keep our lines in order next to wit's
+        sys.stdout.reconfigure(line_buffering=True)
+    except (AttributeError, ValueError):
+        pass
+
     global no_fetch
     no_fetch = args.no_fetch
 
@@ -361,14 +651,17 @@ def main():
         print("Wiimms ISO Tool %s" % WIT_VERSION)
         return 0 if fetch_wit() else 1
 
+    if args.auto or (not args.iso and not args.check and not ready()):
+        return 0 if auto(force=args.force) else 1
+
     report()
     if args.check or not args.iso:
         if not args.iso and not os.path.exists(os.path.join(DATA, "BaseGameplay.pkz")):
             print("\nGive it your disc image to get started:\n"
                   "    python3 setup.py /path/to/Skylanders.iso")
         elif not args.iso:
-            print("\nReady. Start the launcher with:\n    ./run.sh          "
-                  "(Windows: run.cmd)")
+            print("\nReady. Double-click \"Start Hotstreak Hub\" (this folder), "
+                  "or run ./run.sh")
         return 0
 
     print("\nSetting up")
