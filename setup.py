@@ -645,44 +645,6 @@ def baselines():
         ok("baselines")
 
 
-def pools():
-    """Put the disc's own driver records back in the four enemy pools.
-
-    An earlier build left five villain records at the end of every driver pool
-    (`EnemyAIList_*_StarterPack`), and a race fields the pool's records - so the
-    whole field came out villain, however the driver records were recast. The
-    shipped pools come from the pristine baseline, which is already on disk, and
-    both files that matter are repaired: the tree the image is built from and
-    `working-randomcast`, the base the launcher rolls every race from.
-    """
-    ref = os.path.join(BACKUPS, "BaseGameplay.pkz.pristine")
-    if not os.path.exists(ref):
-        return True
-    sys.path.insert(0, os.path.join(HERE, "tools"))
-    import pkz_pool_swap as SWAP
-
-    with open(ref, "rb") as f:
-        pristine = f.read()
-    fixed = 0
-    for path in (os.path.join(DATA, "BaseGameplay.pkz"),
-                 os.path.join(BACKUPS, "BaseGameplay.pkz.working-randomcast")):
-        if not os.path.exists(path):
-            continue
-        with open(path, "rb") as f:
-            src = f.read()
-        out, _changed = SWAP.restore(src, pristine)
-        if out is None:
-            print("  could not repair the driver pools in %s - leaving it alone"
-                  % os.path.basename(path))
-            continue
-        if out != src:
-            with open(path, "wb") as f:
-                f.write(out)
-            fixed += 1
-    ok("driver pools" + (" (villain swap undone)" if fixed else ""))
-    return True
-
-
 def art():
     if os.path.exists(ART):
         ok("artwork")
@@ -786,7 +748,6 @@ def auto(force=False, iso=None, verified=False):
 
     step(4, "Preparing the game (about a minute)")
     baselines()
-    pools()
     if force and os.path.exists(ART):
         os.remove(ART)
     art()
@@ -891,7 +852,6 @@ def main():
     if not extract(args.iso):
         return 1
     baselines()
-    pools()
     if args.force and os.path.exists(ART):
         os.remove(ART)
     art()
