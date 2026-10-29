@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Start Hotstreak Hub. This is the file the double-click starter runs.
 
-It does the four things a new machine needs, in order, in plain language:
+It does the five things a new machine needs, in order, in plain language:
 
     1. is Python new enough, and does it have its window kit
-    2. is Pillow there (installed quietly if not - no admin, no prompts)
-    3. has this folder been set up from the game yet (setup.py --auto does it,
-       including finding the game file)
-    4. open the launcher window
+    2. is the game file the right one, and is it whole (read only - nothing is
+       unpacked yet, so a bad file costs ten seconds and not a minute)
+    3. has this folder been set up from the game yet (setup.py --auto then does
+       the heavy part: unpack, baselines, artwork, build, verify)
+    4. is Pillow there (installed silently if not - no admin, no prompts)
+    5. open the launcher window
 
     python3 start.py              # the whole thing
     python3 start.py --setup-only # stop after step 3
@@ -49,6 +51,33 @@ def pause_if_double_clicked():
         pass
 
 
+def preflight_game():
+    """Find the game file and check it, before the setup does anything.
+
+    Returns (ok_to_continue, path). setup.py owns both halves - this only puts
+    them in front of the wizard, so a half-finished download or a European disc
+    is answered before any tool is downloaded or unpacked. If setup.py cannot be
+    imported (an incomplete folder), this steps aside: the setup checks the file
+    itself at its step 3.
+    """
+    try:
+        sys.path.insert(0, HERE)
+        import setup                                        # noqa: PLC0415
+    except Exception:                                       # noqa: BLE001
+        return True, None
+    say("")
+    say("Is your game file the right one?")
+    try:
+        path = setup.ask_for_image(announce=False)
+    except Exception:                                       # noqa: BLE001
+        return True, None
+    if not path:
+        say("  I have not found it yet - the setup will ask you for it.")
+        return True, None
+    say("  found it: %s  (%.1f GB)" % (path, os.path.getsize(path) / 1e9))
+    return setup.verify_rip(path, guided=True), path
+
+
 def main(argv):
     check_only = "--check" in argv
     setup_only = "--setup-only" in argv
@@ -84,8 +113,18 @@ def main(argv):
         return 0
 
     if not ready:
-        # setup.py knows how to install Pillow and how to find the game; let it
-        rc = subprocess.call([sys.executable, SETUP, "--auto"])
+        good, game = preflight_game()
+        if not good:
+            say("")
+            say("The setup has not started: nothing was unpacked and nothing was changed.")
+            pause_if_double_clicked()
+            return 1
+        # setup.py knows how to install Pillow and how to finish the job; the
+        # file was just checked, so name it and skip checking it a second time
+        args = [sys.executable, SETUP, "--auto"]
+        if game:
+            args += [game, "--already-checked"]
+        rc = subprocess.call(args)
         if rc != 0:
             pause_if_double_clicked()
             return rc

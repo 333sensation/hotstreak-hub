@@ -365,7 +365,7 @@ the matching entry in the table. An in-place key swap that only edits the data
 leaves a ref that is not in the table (same failure mode as the deleted
 `pkz_ai_append.py`).
 
-## Applied mod: villains swapped into the driver pools (current)
+## Villain swap in the driver pools (tried, then reverted)
 
 `tools/pkz_pool_swap.py` writes **no new bytes**: in each of the four driver
 pools it rewrites the 4-byte key of existing driver records to a villain
@@ -391,7 +391,29 @@ fields;
 every `RacerAIList` still mirrors its ref table (set equality); `wit verify` →
 `+OK … SKNE52`; the file extracted from the image compares equal to the tree.
 
-Revert: `cp disc/files/Data/BaseGameplay.pkz.orig disc/files/Data/BaseGameplay.pkz`.
+### Why it came out again: the field was all villains
+
+In a race the opponent grid was villains only (Chef Pepper Jack, Wolfgang, …)
+while the 56 driver records carried the recast cast - so a race does not pick a
+pool's records at random, it fields the ones this swap overwrote (the last five
+of each pool). The swap is therefore invisible as a "some villains" feature and
+lethal as a "random cast" one: the recast figures never reach the grid.
+
+`tools/pkz_pool_swap.py --restore` puts the disc's own records back - the record
+keys and the whole `0x139C` table, copied from
+`backups/BaseGameplay.pkz.pristine`, 158 bytes, same size. The recast driver
+records are untouched, so the field is a random cast again. It also repairs the
+ref table: the swap plus `drop_greebles` had left the four driver pools with 21
+ref entries over 20 distinct records, i.e. no longer a mirror of their records.
+
+`setup.py` runs that repair in step 4 (`Preparing the game`) on both files that
+matter - the tree the image is built from and
+`backups/BaseGameplay.pkz.working-randomcast`, the base the launcher rolls every
+race from - so a first build cannot inherit the swamp.
+
+Revert the swap by hand: `python3 tools/pkz_pool_swap.py --restore`;
+roll a whole file back with `cp disc/files/Data/BaseGameplay.pkz.orig …`
+(only present on an old tree).
 
 ## Failed attempt: all four pools grown to hold every racer (reverted)
 

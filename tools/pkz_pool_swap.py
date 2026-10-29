@@ -26,9 +26,17 @@ It also spreads duplicate records: each shipped action-pack pool lists its
 single Greeble object three times, and one object is one racer, so the excess
 records are re-pointed at other keys the pool already references.
 
+`--restore` is the way back: it writes the reference file's keys into the same
+record positions (and their `0x139C` entries), so the pools hold the disc's own
+driver records again. `setup.py` runs it on every build, because a race fields
+the pool's records - with villains left at the end of a pool the whole field
+comes out villain, whatever figures the driver records were recast to.
+
 Usage: pkz_pool_swap.py [--src ...] [--dst ...] [--slots N] [--dry-run]
+       pkz_pool_swap.py --restore [--ref backups/BaseGameplay.pkz.pristine]
 """
 import argparse
+import os
 import re
 import struct
 import sys
@@ -116,17 +124,101 @@ def body_fields(d, data_off):
     return ps, ln, own, type_id, keys
 
 
+def restore(src, ref):
+    """Put the disc's own record keys back in the four driver pools.
+
+    Only the record keys and their `0x139C` mirrors are rewritten - never a
+    length, never a racer record - so the recast driver records (the random
+    cast) and every fuel/hull reference stay exactly as they are.
+
+    Returns (bytes, [(pool, records changed)]) or (None, []) when the result
+    would not still mirror its tables, in which case nothing may be written.
+    """
+    want = {}
+    for name, _terrain in POOLS:
+        for w in wrappers(ref):
+            key, rname, roff, rlen, doff, dlen = read_wrapper(ref, w)
+            if rname == name and doff is not None:
+                ps, ln, own, typ, keys = body_fields(ref, doff)
+                want[name] = (keys, ref[ps + 0x18:ps + ln], ref[roff:roff + rlen])
+                break
+
+    d = bytearray(src)
+    changed = []
+    for w in wrappers(src):
+        key, name, roff, rlen, doff, dlen = read_wrapper(src, w)
+        if doff is None or name not in want:
+            continue
+        ps, ln, own, typ, keys = body_fields(src, doff)
+        if typ != LIST_TYPE:
+            continue
+        ref_keys, ref_body, ref_table = want[name]
+        if (len(ref_keys) != len(keys) or len(ref_body) != ln - 0x18
+                or len(ref_table) != rlen):
+            print("error: %s does not have the same layout as the reference"
+                  % name, file=sys.stderr)
+            return None, []
+        # the record area and the 0x139C table, straight from the shipped file
+        # (both files put the pool at the same offset - every edit here is in
+        # place, so the layout never moved)
+        d[ps + 0x18:ps + ln] = ref_body
+        d[roff:roff + rlen] = ref_table
+        if keys != ref_keys:
+            changed.append((name, sum(1 for a, b in zip(keys, ref_keys) if a != b)))
+
+    for w in wrappers(src):
+        key, name, roff, rlen, doff, dlen = read_wrapper(src, w)
+        if doff is None or name not in want:
+            continue
+        ps, ln, own, typ, keys = body_fields(d, doff)
+        refs = [struct.unpack_from(">I", d, j + 4)[0]
+                for j in range(roff, roff + rlen, 8)]
+        if set(refs) != set(keys):
+            print("error: %s would not mirror its ref table" % name,
+                  file=sys.stderr)
+            return None, []
+    return bytes(d), changed
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default="disc/files/Data/BaseGameplay.pkz")
     ap.add_argument("--dst", default=None, help="default: rewrite --src in place")
     ap.add_argument("--slots", type=int, default=8, help="driver records to replace per pool")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--restore", action="store_true",
+                    help="put the shipped driver records back in the four pools "
+                         "(undo the villain swap)")
+    ap.add_argument("--ref", default="backups/BaseGameplay.pkz.pristine",
+                    help="with --restore: the file holding the shipped pools")
     args = ap.parse_args()
 
     raw = open(args.src, "rb").read()
     d = bytearray(raw)
     print("source %s: %d bytes" % (args.src, len(raw)))
+
+    if args.restore:
+        if not os.path.exists(args.ref):
+            print("error: no reference file at %s" % args.ref, file=sys.stderr)
+            return 1
+        out, changed = restore(raw, open(args.ref, "rb").read())
+        if out is None:
+            return 1
+        for name, n in changed:
+            print("  %-44s %d record%s back to the shipped key"
+                  % (name, n, "" if n == 1 else "s"))
+        if not changed:
+            print("  pools already hold the shipped records")
+        if len(out) != len(raw):
+            print("error: size changed", file=sys.stderr)
+            return 1
+        print("\nbytes changed: %d" % sum(1 for a, b in zip(raw, out) if a != b))
+        if args.dry_run:
+            print("dry run - nothing written")
+            return 0
+        open(args.dst or args.src, "wb").write(out)
+        print("wrote %s (size unchanged)" % (args.dst or args.src))
+        return 0
 
     pool_rows, infos = {}, {}
     for w in wrappers(raw):

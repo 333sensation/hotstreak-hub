@@ -120,10 +120,11 @@ it to your own rip in about five minutes. That is the whole trick, and it is why
 
 **The short version: double-click `Start Hotstreak Hub`** (`Start Hotstreak Hub.command`
 on macOS, `Start Hotstreak Hub.bat` on Windows, `./run.sh` on Linux). The first
-run installs the two small Python extras, downloads `wit`, finds your game file
-wherever it is, builds the ready-to-play image, checks it, and opens the
-launcher. Five numbered steps, no paths to type, no admin password. That is the
-whole install.
+run **finds your game file and checks that it really is this game, whole and the
+right region** — before anything is unpacked — then installs the two small Python
+extras, downloads `wit`, builds the ready-to-play image, checks that too, and
+opens the launcher. No paths to type, no admin password. That is the whole
+install.
 
 You bring two things: **Python 3.9+** (from python.org, with the *tcl/tk* box
 ticked) and **your own copy of the disc** as a file (`.iso`, `.wbfs` or `.wia`).
@@ -328,7 +329,7 @@ no arguments (`python3 tools/pkz_objects.py`).
 | `pkz_racer_vehicles.py` | keeps every racer on the figure+hull pair it shipped with and fields real villains instead of the scrap-driving Greeble dummies |
 | `pkz_stats_patch.py` | give every character its own racing stats — a spiked spread per figure, same 3.0 total; fills the 148 empty stat records |
 | `pkz_cup_random.py` | re-point the three cup playlists at the disc's own circuits |
-| `pkz_pool_swap.py` | move villains into the driver pools without resizing anything |
+| `pkz_pool_swap.py` | move villains into the driver pools without resizing anything (`--restore` puts the disc's own records back; `setup.py` runs that) |
 | `extract_art.py` | pull portraits, minimaps and menu backgrounds out as PNG |
 | `make_readme_images.py` | compose `docs/banner.png` and `docs/roster.png` out of that art |
 | `make_promo.py` | render `promo/promo.mp4`: game art, game music, one ffmpeg pipe |

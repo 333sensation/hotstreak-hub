@@ -462,6 +462,10 @@ def verify_rip(path=None, guided=False):
     so that run only reports the findings, without the closing "you can start
     now" - the setup has four more steps to go before that is true.
     """
+    try:                                  # keep our lines in order next to wit's
+        sys.stdout.reconfigure(line_buffering=True)
+    except (AttributeError, ValueError):
+        pass
     print("Checking your game file")
     wit = ensure_wit()
     if not wit:
@@ -641,6 +645,44 @@ def baselines():
         ok("baselines")
 
 
+def pools():
+    """Put the disc's own driver records back in the four enemy pools.
+
+    An earlier build left five villain records at the end of every driver pool
+    (`EnemyAIList_*_StarterPack`), and a race fields the pool's records - so the
+    whole field came out villain, however the driver records were recast. The
+    shipped pools come from the pristine baseline, which is already on disk, and
+    both files that matter are repaired: the tree the image is built from and
+    `working-randomcast`, the base the launcher rolls every race from.
+    """
+    ref = os.path.join(BACKUPS, "BaseGameplay.pkz.pristine")
+    if not os.path.exists(ref):
+        return True
+    sys.path.insert(0, os.path.join(HERE, "tools"))
+    import pkz_pool_swap as SWAP
+
+    with open(ref, "rb") as f:
+        pristine = f.read()
+    fixed = 0
+    for path in (os.path.join(DATA, "BaseGameplay.pkz"),
+                 os.path.join(BACKUPS, "BaseGameplay.pkz.working-randomcast")):
+        if not os.path.exists(path):
+            continue
+        with open(path, "rb") as f:
+            src = f.read()
+        out, _changed = SWAP.restore(src, pristine)
+        if out is None:
+            print("  could not repair the driver pools in %s - leaving it alone"
+                  % os.path.basename(path))
+            continue
+        if out != src:
+            with open(path, "wb") as f:
+                f.write(out)
+            fixed += 1
+    ok("driver pools" + (" (villain swap undone)" if fixed else ""))
+    return True
+
+
 def art():
     if os.path.exists(ART):
         ok("artwork")
@@ -677,11 +719,12 @@ def ready():
             and os.path.exists(IMAGE))
 
 
-def auto(force=False):
+def auto(force=False, iso=None, verified=False):
     """The whole setup, in five steps, asking nothing if it can help it.
 
     This is what the double-click starter runs: find the game, open it, build the
-    ready-to-play file, check it, say it is ready.
+    ready-to-play file, check it, say it is ready. `iso` skips the search, and
+    `verified` skips the check because start.py has already run it on that file.
     """
     print("Hotstreak Hub - setup")
     print("=" * 20)
@@ -720,7 +763,7 @@ def auto(force=False):
     if os.path.exists(os.path.join(DATA, "BaseGameplay.pkz")):
         ok("already opened - nothing to do")
     else:
-        iso = ask_for_image()
+        iso = iso or ask_for_image()
         if not iso:
             print("  I could not find it by myself.")
             print("  Drop your game file into this folder (%s) and run this again," % HERE)
@@ -735,7 +778,7 @@ def auto(force=False):
                 print("\n  No game file yet - that is the one part you have to bring.")
                 print("  Full instructions: START-HERE.md")
                 return False
-        if not verify_rip(iso, guided=True):
+        if not verified and not verify_rip(iso, guided=True):
             print("\n  Nothing was unpacked - fix the file above and run this again.")
             return False
         if not extract(iso):
@@ -743,6 +786,7 @@ def auto(force=False):
 
     step(4, "Preparing the game (about a minute)")
     baselines()
+    pools()
     if force and os.path.exists(ART):
         os.remove(ART)
     art()
@@ -803,6 +847,9 @@ def main():
     ap.add_argument("--verify-rip", action="store_true",
                     help="only check your game file: right game, right region, "
                          "whole dump - change nothing")
+    ap.add_argument("--already-checked", action="store_true",
+                    help="the game file has been checked already (start.py does "
+                         "it before the setup starts); skip checking it again")
     ap.add_argument("--fetch-wit", action="store_true",
                     help="only fetch Wiimms ISO Tool into tools/wit/")
     ap.add_argument("--no-fetch", action="store_true",
@@ -825,7 +872,8 @@ def main():
         return 0 if verify_rip(args.iso) else 1
 
     if args.auto or (not args.iso and not args.check and not ready()):
-        return 0 if auto(force=args.force) else 1
+        return 0 if auto(force=args.force, iso=args.iso,
+                         verified=args.already_checked) else 1
 
     report()
     if args.check or not args.iso:
@@ -843,6 +891,7 @@ def main():
     if not extract(args.iso):
         return 1
     baselines()
+    pools()
     if args.force and os.path.exists(ART):
         os.remove(ART)
     art()
