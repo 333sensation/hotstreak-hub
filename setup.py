@@ -314,8 +314,14 @@ def find_images():
                     continue
                 path = os.path.join(folder, name)
                 real = os.path.realpath(path)
-                if real in seen or os.path.basename(path) == os.path.basename(IMAGE):
-                    continue                  # same file twice, or our own build
+                if real in seen:
+                    continue                  # same file twice
+                if (os.path.basename(path) == os.path.basename(IMAGE)
+                        and os.path.exists(os.path.join(DATA, "BaseGameplay.pkz"))):
+                    # our own build - skipped so a second run does not unpack the
+                    # image it just made. With no tree yet it is the only file we
+                    # have, so a release download with that name still counts.
+                    continue
                 try:
                     size = os.path.getsize(path)
                 except OSError:
@@ -721,7 +727,6 @@ def auto(force=False, iso=None, verified=False):
     ok("ready")
 
     step(3, "Finding your game")
-    iso = None
     if os.path.exists(os.path.join(DATA, "BaseGameplay.pkz")):
         ok("already opened - nothing to do")
     else:

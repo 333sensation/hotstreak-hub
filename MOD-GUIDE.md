@@ -159,7 +159,7 @@ as a rebuilt image and files inside this folder.
 
 `reroll.sh` and `cups.sh` do the same rolls from a shell without the window.
 `tools/` holds the patchers, one file each, with the format they read or write
-explained at the top of the file; the README lists all of them. The engine side —
+explained at the top of the file; [`TECHNICAL.md`](TECHNICAL.md) lists all of them. The engine side —
 how a racer record points at a figure, an AI template and a hull, and what the
 game validates — is in [`FINDINGS.md`](FINDINGS.md). For the ranking all 182
 figures' stats produce, see [`TIERLIST.md`](TIERLIST.md).
